@@ -16,8 +16,8 @@ some way to specify the browser
 
 
 things to do:
-1. port vivify.vim to nixos
-
+1. port vivify.vim to nixos (got problems see `https://discourse.nixos.org/t/help-with-adding-a-vim-plugin-in-nixpkgs/76682`)
+2. i'm gonna work on the TUI for now.
 
 
 
