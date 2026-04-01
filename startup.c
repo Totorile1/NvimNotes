@@ -9,6 +9,7 @@
 #include <ncurses.h>
 #include <unistd.h>
 #include <ctype.h>
+#include <ftw.h> // used for deleting dirs
 
 // small helper functions here. Big ones are after
 int compareString(const void *a, const void *b) { // this will be the function used by qsort
@@ -25,6 +26,24 @@ void sanitize(char *string) {
         string[i] = '_';
     }
   }
+}
+
+//  both functions are from https://stackoverflow.com/a/5467788
+// from what i understood:
+// remove() can't delete directories with files
+// so it walks the file tree and deletes it's content before removing the directory
+// (TODO LATER) this seems safe, but it's maybe a good idea to add some checks to not remove something it should not remove
+int unlink_cb(const char *fpath, const struct stat *sb, int typeflag, struct FTW *ftwbuf) {
+    int rv = remove(fpath);
+
+    if (rv)
+        perror(fpath);
+
+    return rv;
+}
+
+int rmrf(char *path) {
+    return nftw(path, unlink_cb, 64, FTW_DEPTH | FTW_PHYS);
 }
 
 // big critical functions here. Small ones are before
@@ -167,7 +186,7 @@ char** getNotesFromVault(char *pathToVault, char *vault, int *count, int debug) 
     if (debug) {printf("\e[0;32m[DEBUG]\e[0m Opening %s aka the vault\n", vault);}
 
     // originally from https://www.geeksforgeeks.org/c/c-program-list-files-sub-directories-directory/
-    struct dirent *notesDirectoryEntry;
+    struct dirent *notesDirectoryEntry; // (TODO LATER) change name of these variables. notesDirectory is dumb as it is the directory of vaults
     char tempPath[PATH_MAX];
     snprintf(tempPath, sizeof(tempPath), "%s/%s", pathToVault, vault); // sets the full absolute path to fullPathEntry
     DIR *vaultDirectory = opendir(tempPath);
@@ -204,7 +223,7 @@ char** getNotesFromVault(char *pathToVault, char *vault, int *count, int debug) 
     return notesArray;
 }
 
-char* ncursesSelect(char **options, char *optionsType, size_t optionsNumber, int debug) { // this fonction make a TUI to select one of multiple options.
+char* ncursesSelect(char **options, char *optionsText, size_t optionsNumber, int debug) { // this fonction make a TUI to select one of multiple options.
     int highlight = 0; //curently highlighted option
     int choice = 1; //selected index
     int key;
@@ -215,7 +234,7 @@ char* ncursesSelect(char **options, char *optionsType, size_t optionsNumber, int
     keypad(stdscr, TRUE);   // enable arrow keys 
     while (1) {
       clear();
-      mvprintw(0,0, "Select %s (Use arrows or WASD, Enter to select):", optionsType);
+      mvprintw(0,0, "Select %s (Use arrows or WASD, Enter to select):", optionsText);
 
             // Print options with highlighting
       for(int i = 0; i < optionsNumber; i++) {
@@ -357,7 +376,7 @@ int main(int argc, char *argv[]) {
       vaultsArray[vaultsCount+1] = "Settings";
       vaultsArray[vaultsCount+2] = "Quit (Ctrl+C)";
       // select a vault
-      char *vaultSelected = ncursesSelect(vaultsArray, "vault", vaultsCount + extraOptions, debug);
+      char *vaultSelected = ncursesSelect(vaultsArray, "Select vault (Use arrows or WASD, Enter to select):", vaultsCount + extraOptions, debug);
       if (debug) {printf("\e[0;32m[DEBUG]\e[0m Selected vault:%s\n", vaultSelected);}
       
       if (strcmp(vaultSelected,"Create a new vault") != 0 && strcmp(vaultSelected,"Settings") != 0 && strcmp(vaultSelected,"Quit (Ctrl+C)") != 0) {
@@ -376,15 +395,16 @@ int main(int argc, char *argv[]) {
             printf("└ ------------------------------\n");
           }
           // adds options
-          int extraNotesOptions = 3;
+          int extraNotesOptions = 4;
           filesArray = realloc(filesArray, (filesCount + extraNotesOptions)*sizeof(char*)); // resize filesArray to fit the extra options
           filesArray[filesCount] = "Create new note";
           filesArray[filesCount+1] = "Back to vault selection";
-          filesArray[filesCount+2] = "Quit (Ctrl+C)";
-          char *noteSelected = ncursesSelect(filesArray, "note", filesCount + extraNotesOptions, debug);
+          filesArray[filesCount+2] = "Delete vault";
+          filesArray[filesCount+3] = "Quit (Ctrl+C)";
+          char *noteSelected = ncursesSelect(filesArray, "Select note (Use arrows or WASD, Enter to select):", filesCount + extraNotesOptions, debug);
           if (debug) {printf("\e[0;32m[DEBUG]\e[0m Selected note: %s\n", noteSelected);}
           
-          if (strcmp(noteSelected, "Create new note") != 0 && strcmp(noteSelected,"Back to vault selection") != 0 && strcmp(noteSelected,"Quit (Ctrl+C)") != 0) {
+          if (strcmp(noteSelected, "Create new note") != 0 && strcmp(noteSelected,"Back to vault selection") != 0 && strcmp(noteSelected, "Delete vault") != 0 && strcmp(noteSelected,"Quit (Ctrl+C)") != 0) {
             char fullPath[PATH_MAX];
             sprintf(fullPath, "%s/%s/%s", notesDirectoryString, vaultSelected, noteSelected);
             openNvim(fullPath, debug);
@@ -394,6 +414,18 @@ int main(int argc, char *argv[]) {
             free(pathToOpen);
           } else if (strcmp(noteSelected,"Back to vault selection") == 0) {
             shouldChangeVault = 1;
+          } else if (strcmp(noteSelected, "Delete vault") == 0) {
+            const char *yesNo[] = {"No, go back to note selection.", "Yes."};
+            char *answer = ncursesSelect((char **)yesNo, "Are you sure you want to delete the entire vault? This can not be undone.", 2, debug);
+            if (debug) {printf("\e[0;32m[DEBUG]\e[0mYou answered: \e[0;32m%s\e[0m for deleting the vault named \e[0;32m%s\e[0m\n", answer, vaultSelected);}
+            if (strcmp(answer, "Yes.") == 0) {
+              // delete the vault after confirmation by the user
+              char pathToRMRF[PATH_MAX];
+              sprintf(pathToRMRF, "%s/%s", notesDirectoryString, vaultSelected);
+              if (debug) {printf("\e[0;32m[DEBUG]\e[0m Removed the directory: \e[0;32m%s\e[0m\n", pathToRMRF);}
+              rmrf(pathToRMRF);
+              shouldChangeVault = 1;
+            }
           } else if (strcmp(noteSelected,"Quit (Ctrl+C)") == 0) {
             if (debug) {printf("\e[0;32m[DEBUG]\e[0m The program was exited,\n");}
             shouldExit = 1;

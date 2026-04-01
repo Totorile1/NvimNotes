@@ -20,6 +20,8 @@ make
 
 ### What needs to be done (a lot)
 - [x] Add a way to create vaults
+- [x] Add a way to delete vaults
+- [ ] Add a way to delete notes
 - [ ] Stylisize a bit the TUI
 - [ ] Add more options to the config file
 - [ ] Search for config.json in other directories such as ~/.config/notewrapper/ and not only this directory
