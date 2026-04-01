@@ -35,8 +35,8 @@ char *createNewNote(char dirToVault[PATH_MAX], char *vaultFromDir, int debug) {
   echo();
   keypad(stdscr, FALSE);
   clear();
-  printw("Enter the name of the note: ");
-  mvprintw(3, 0, "Unsafe charachters such as \\, /, and . will be replaced by _."); // (TODO LATER) add more info
+  printw("Enter the name of the new note: ");
+  mvprintw(3, 0, "Unsafe characters such as \\, and / will be replaced by _"); // (TODO LATER) add more info
   move(1,1);
   wgetnstr(stdscr, fileName, sizeof(fileName)-4); //limits the buffer to prevent overflow (-4 to account indexing and from ".md" in case we need to add it later)
   refresh();
@@ -69,6 +69,55 @@ char *createNewNote(char dirToVault[PATH_MAX], char *vaultFromDir, int debug) {
   fclose(filePointer); // closes the file so that nvim could open it
   return fileFullPath;
 }
+
+void createNewVault(char *dirToVault, int debug) {
+  //(TODO LATER) add a way to go back to vault selection
+  int duplicateWarning = 0; // set to 1 later if the vault you tried to create already existed
+input_screen:
+  char vaultName[256];
+  initscr();
+  echo();
+  keypad(stdscr, FALSE);
+  // color code from https://stackoverflow.com/a/73396575
+  start_color();
+  clear();
+  use_default_colors();
+  init_pair(1, COLOR_WHITE, -1); // -1 is blank
+  init_pair(2, COLOR_RED, -1);
+  attron(COLOR_PAIR(1));
+  printw("Enter the name of the new vault: ");
+  mvprintw(3, 0, "Unsafe characters such as \\ and / will be replaced by _");
+  attroff(COLOR_PAIR(1));
+  if (duplicateWarning) {
+    attron(COLOR_PAIR(2));
+    mvprintw(4, 0, "A vault with this name already exists. Please input another name");
+    attroff(COLOR_PAIR(2));
+  }
+  move(1, 1); // replace cursor 
+  wgetnstr(stdscr, vaultName, sizeof(vaultName)-1);
+  refresh();
+  endwin();
+  if (strcmp(vaultName, "") == 0) {
+    printf("\e[0;31mERROR: vaultName is empty\e[0m\n");
+    exit(1);
+  }
+  if (debug) {printf("\e[0;32m[DEBUG]\e[0m inputed vaultName=%s\n", vaultName);}
+  sanitize(vaultName);
+  if (debug) {printf("\e[0;32m[DEBUG]\e[0m sanitized vaultName=%s\n", vaultName);}
+  
+  struct stat st = {0}; // https://stackoverflow.com/a/7430262
+  char vaultFullPath[PATH_MAX];
+  sprintf(vaultFullPath, "%s/%s/", dirToVault, vaultName);
+  if (stat(vaultFullPath, &st) == -1) {
+    mkdir(vaultFullPath, 0744);
+  } else {
+    // if stat(...) != -1 it means the vault already exist. We will go back to the input screen with a new message.
+    duplicateWarning = 1;
+    goto input_screen;
+  }
+  
+}
+
 
 char** getVaultsFromDirectory(char *dirString, size_t *count, int debug) { 
     // (TODO LATER) it might be a good idea to check if these directories exist
@@ -215,11 +264,13 @@ int openNvim(char *path, int debug) {
     return 1;
   } else if (pid == 0) {
     // Child process: replace with nvim
+    //(TODO LATER) we should (with a config option) append a new line every time it opens
     if (debug) {printf("\e[0;32m[DEBUG]\e[0m Opening with command:\nnvim +:NvimTreeOpen %s\n", path);}
     execlp("nvim",
-         "nvim", // we can specify each argument for nvim by passing more args to execlp
-         path,
-         NULL);
+           "nvim",
+           "+:$", // goes to end of the line // we can specify each argument for nvim by passing more args to execlp
+           path,
+           NULL);
     perror("\e[0;31mERROR: execlp failed. Nvim might be not installed or not in path.\e[0m\n");
     exit(1);
   } else {
@@ -350,7 +401,7 @@ int main(int argc, char *argv[]) {
         }
 
       } else if (strcmp(vaultSelected,"Create a new vault") == 0) {
-
+        createNewVault(notesDirectoryString, debug);
       } else if (strcmp(vaultSelected,"Settings") == 0) {
         // (TODO LATER) add a way to modify the path to config.json
         openNvim("./config.json", debug);
