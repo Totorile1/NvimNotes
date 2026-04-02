@@ -13,13 +13,49 @@
 #include <pwd.h> // for getting home directory
 #define HASH_MACRO "0ea1d20bcdd52c46c086d3dba125b9b83ad8cbea2e026d5646775f48bae8f867" // if the user inputs this hash. The program brokes. It was the best way i found to see if some values were unchanged
 // small helper functions here. Big ones are after
+const char *supportedEditor[] = {"neovim", "vim"};
+const int numEditors = 2;
+
 int compareString(const void *a, const void *b) { // this will be the function used by qsort
     const char *str1 = *(const char **)a;
     const char *str2 = *(const char **)b;
     return strcmp(str1, str2); // strcmp returns <0, 0, >0
 }
 
-int isStringInArray(char *string, char **array, int len) {
+int doesEditorExist (char *editorToCheck, int debug) { // this basically checks all the dirs from your path for the editor. This is a safety check
+    // Some exectuables have not exaclty the same name as the editor.
+  char *editor;   
+    if (strcmp(editorToCheck, "neovim") == 0) {
+      editor = strdup("nvim"); // we must use strdup and not just copy as we would have modified editorToOpen in main
+    }
+    else {
+      editor = strdup(editorToCheck);
+    }
+    char *path_env = getenv("PATH");
+    if (!path_env) {
+      printf("\e[0;31mERROR: getenv(\"PATH\") failed to get your path. NoteWrapper is unable to check if your desired editor is installed\n");
+      exit(1);
+    };
+    if (debug) {printf("\e[0;32m[DEBUG]\e[0m Your PATH is %s\n", path_env);}
+    char *paths = strdup(path_env); // duplicate because strtok modifies the string
+    char *dir = strtok(paths, ":");
+    while (dir) {
+        char fullpath[PATH_MAX];
+        snprintf(fullpath, sizeof(fullpath), "%s/%s", dir, editor);
+        if (access(fullpath, X_OK) == 0) { // program found
+            free(paths);
+            free(editor);
+            return 1;
+        }
+        dir = strtok(NULL, ":");
+    }
+
+    free(paths);
+    free(editor);
+    return 0; // program not found
+}
+
+int isStringInArray(const char *string, const char **array, const int len) {
   for (int i = 0; i < len; i++) {
     if (strcmp(string, array[i]) == 0) {
       return 1;
@@ -329,24 +365,24 @@ int openEditor(char *path, char *editor, int render, int endOfFile, int debug) {
         if (endOfFile) { // goes to the end of the file on opening. (TODO LATER) find a better way to do this loops. Maybe an array of args and if () we add the arg to the array and we pass the whole array to execlp
           if (debug) {printf("\e[0;32m[DEBUG]\e[0m Opening with command:\nnvim +:$ +:Vivify %s\n", path);} // :$ goes to the end of the file. :Vivify runs vivify
             execlp("nvim", "nvim", "+:$", "+:Vivify", path, NULL);
-            perror("\e[0;31mERROR: execlp failed. Nvim might be not installed or not in path.\e[0m\n"); // (TODO LATER) We should verify at the start when the editor is choosen if it exists
+            perror("\e[0;31mERROR: execlp failed. Nvim might be not installed or not in path.\e[0m\n");
             exit(1); // (TODO LATER) This exist only if error or everytime. If it does every time change to exit(0);
         } else { // don't go to the end of the file
           if (debug) {printf("\e[0;32m[DEBUG]\e[0m Opening with command:\nnvim +:Vivify %s\n", path);}
             execlp("nvim", "nvim", "+:Vivify", path, NULL);
-            perror("\e[0;31mERROR: execlp failed. Nvim might be not installed or not in path.\e[0m\n"); // (TODO LATER) We should verify at the start when the editor is choosen if it exists
+            perror("\e[0;31mERROR: execlp failed. Nvim might be not installed or not in path.\e[0m\n");
             exit(1);
         }
       } else { // don't render using vivify
         if (endOfFile) { // go to end of the file on opening
           if (debug) {printf("\e[0;32m[DEBUG]\e[0m Opening with command:\nnvim +:$ %s\n", path);}
             execlp("nvim", "nvim", "+:$", path, NULL);
-            perror("\e[0;31mERROR: execlp failed. Nvim might be not installed or not in path.\e[0m\n"); // (TODO LATER) We should verify at the start when the editor is choosen if it exists
+            perror("\e[0;31mERROR: execlp failed. Nvim might be not installed or not in path.\e[0m\n");
             exit(1);
         } else { // don't go to the end of the file on opening
           if (debug) {printf("\e[0;32m[DEBUG]\e[0m Opening with command:\nnvim %s\n", path);}
             execlp("nvim", "nvim", path, NULL);
-            perror("\e[0;31mERROR: execlp failed. Nvim might be not installed or not in path.\e[0m\n"); // (TODO LATER) We should verify at the start when the editor is choosen if it exists
+            perror("\e[0;31mERROR: execlp failed. Nvim might be not installed or not in path.\e[0m\n");
             exit(1);
         }
       }
@@ -368,12 +404,12 @@ int openEditor(char *path, char *editor, int render, int endOfFile, int debug) {
         if (endOfFile) {
           if (debug) {printf("\e[0;32m[DEBUG]\e[0m Opening with command:\nvim +:$ %s\n", path);}
             execlp("vim", "vim", "+:$", path, NULL);
-            perror("\e[0;31mERROR: execlp failed. Vim might be not installed or not in path.\e[0m\n"); // (TODO LATER) We should verify at the start when the editor is choosen if it exists
+            perror("\e[0;31mERROR: execlp failed. Vim might be not installed or not in path.\e[0m\n");
             exit(1);
         } else {
           if (debug) {printf("\e[0;32m[DEBUG]\e[0m Opening with command:\nvim %s\n", path);}
             execlp("vim", "vim", path, NULL);
-            perror("\e[0;31mERROR: execlp failed. Vim might be not installed or not in path.\e[0m\n"); // (TODO LATER) We should verify at the start when the editor is choosen if it exists
+            perror("\e[0;31mERROR: execlp failed. Vim might be not installed or not in path.\e[0m\n");
             exit(1);
         }
       }
@@ -484,6 +520,17 @@ int main(int argc, char *argv[]) {
     char *editorToOpen = "neovim"; // default
     cJSON *editorToOpenJSON = cJSON_GetObjectItem(json, "editor");
     if (editorToOpenJSON || cJSON_IsString(editorToOpenJSON)) {
+      if (debug) {printf("\e[0;32m[DEBUG]\e[0m Editor in config.json is %s\n", editorToOpenJSON->valuestring);}
+      if (!isStringInArray(editorToOpenJSON->valuestring, supportedEditor, numEditors)) { // if we don't support this editor
+        printf("\e[0;31mERROR: %s (fetched from config.json) is not a supported editor. Supported editors are ", editorToOpenJSON->valuestring);
+        for (int i = 0; i < numEditors; i++) {
+          if (i < numEditors-2) {printf("\e[0;32m%s\e[0;31m, ", supportedEditor[i]);} // this if () {} else {} is used to get something like this "editor1, editor2, [...], editorn-2, editorn-1 and editorn"
+          else if (i == numEditors-2) {printf("\e[0;32m%s\e[0;31m and ", supportedEditor[i]);}
+          else {printf("\e[0;32m%s\e[0;31m.", supportedEditor[i]);}
+        }
+        printf("\e[0m\n");
+        exit(1);
+      }
       editorToOpen = strdup(editorToOpenJSON->valuestring); // we must strdup and not just = as we will free all the json after (before parsing args)
     }
     //cleans up 
@@ -518,15 +565,26 @@ int main(int argc, char *argv[]) {
           printf("There is still no released version\n");
           return 0;
         } else if (strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--directory") == 0) {
+          if (i+1 == argc) { // if -nd or --directory was the last argument
+              printf("\e[0;31mERROR: Missing argument. Please use -d <path/to/directory> or --directory <path/to/directory>.\e[0m\n");
+              exit(1);
+          }
           notesDirectoryString = argv[i+1];
           // (TODO LATER) Add a check if there is a arg after, if it is a directory, expand $, work with . and .., check if there is a dir.
           // it works with .. and . if the dir exists
           // (TODO LATER) Add debug info for this flag and others
         } else if (strcmp(argv[i], "-v") == 0 || strcmp(argv[i], "--vault") == 0) {
+          if (i+1 == argc) { // if -v or --vault was the last argument
+              printf("\e[0;31mERROR: Missing argument. Please use -v <vault's name> or --vault <vault's name>.\e[0m\n");
+              exit(1);
+          }
           bypassVaultSelection = argv[i+1]; // (TODO LATER) Add security checks pass ti strndup. and if vault don't exist create one. SEE (TODO LATER) where bypassVaultSelection is checked
         } else if (strcmp(argv[i], "-n") == 0 || strcmp(argv[i], "--note") == 0) { // (TODO LATER) Broken if we put the -v flag after the -n flag
-          if (strcmp(bypassVaultSelection, HASH_MACRO) == 0) {
-            printf("\e[0;31mERROR: If you want to specify the note, you must also specify the vault with -v\e[0m\n");
+          if (i+1 == argc) { // if -n or --note was the last argument
+              printf("\e[0;31mERROR: Missing argument. Please use -n <note's name> or --note <note's name>.\e[0m\n");
+              exit(1);
+          } else if (strcmp(bypassVaultSelection, HASH_MACRO) == 0) { // bypassVaultSelection is initialized to HASH_MACRO, if it is not changed it means -v wasn't specified
+            printf("\e[0;31mERROR: If you want to specify the note, you must also specify the vault with -v <vault's name> or --vault <vault's name>\e[0m\n");
             exit(1);
           } else {
             bypassNoteSelection = argv[i+1];
@@ -541,8 +599,33 @@ int main(int argc, char *argv[]) {
         } else if (strcmp(argv[i], "-R") == 0 || strcmp(argv[i], "--no-render") == 0) {
           shouldRender = 0;
         } else if (strcmp(argv[i], "-e") == 0 || strcmp(argv[i], "--editor") == 0) {
-          editorToOpen = argv[i+1];
+            if (i+1 == argc) { // if -e or --editor was the last argument
+              printf("\e[0;31mERROR: Missing argument. Please use -e <editor> or --editor <editor>.\e[0m\n");
+              exit(1);
+            }
+            editorToOpen = argv[i+1];
+            if (debug) {
+              printf("\e[0;32m[DEBUG]\e[0m Editor specified with -e or --editor is %s\n", editorToOpen);
+            }
+            if (!isStringInArray(editorToOpen, supportedEditor, numEditors)) { // if we don't support this editor
+              printf("\e[0;31mERROR: %s (specified with -e or --editor) is not a supported editor. Supported editors are ", editorToOpen);
+              for (int i = 0; i < numEditors; i++) {
+                if (i < numEditors-2) {
+                  printf("\e[0;32m%s\e[0;31m, ", supportedEditor[i]); // this if () {} else {} is used to get something like this "editor1, editor2, [...], editorn-2, editorn-1 and editorn"
+                } else if (i == numEditors-2) {
+                  printf("\e[0;32m%s\e[0;31m and ", supportedEditor[i]);
+                } else {printf("\e[0;32m%s\e[0;31m.", supportedEditor[i]);
+                }
+              }
+              printf("\e[0m\n");
+              exit(1);
+            }
         }
+    }
+
+    if (!doesEditorExist(editorToOpen, debug)) { // check if the editor is in your PATH
+      printf("\e[0;31mERROR: %s is either not in your path or not installed.\e[0m\n", editorToOpen);
+      exit(1);
     }
 
     int shouldExit = 0;
@@ -614,7 +697,7 @@ note_selection:
           if (strcmp(bypassNoteSelection, HASH_MACRO) != 0) {
             // (TODO LATER) Add debug info
             noteSelected = bypassNoteSelection;
-            if (isStringInArray(noteSelected, filesArray, filesCount + extraNotesOptions)) {// (TODO LATER) Handle the case where the note name is one of the extraOptions
+            if (isStringInArray(noteSelected, (const char **)filesArray, filesCount + extraNotesOptions)) {// (TODO LATER) Handle the case where the note name is one of the extraOptions
               goto open_note;
             } else { // if the specified note doesn't exist. We creat it
               goto note_creation;
