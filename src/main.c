@@ -14,11 +14,11 @@
 
 int main(int argc, char *argv[]) {
 
-    int debug = 0;
-    // all of the argument parsing is done after so flags overwrite config options. The only config options that can't be set in the config is the debug
+    int shouldDebug = 0;
+    // all of the argument parsing is done after so flags overwrite config options. The only config options that can't be set in the config is the shouldDebug
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-V") == 0 || strcmp(argv[i], "--verbose") == 0) {
-            debug = 1;
+            shouldDebug = 1;
         }
     }
 
@@ -29,23 +29,17 @@ int main(int argc, char *argv[]) {
     // gets the home directory
     struct passwd *pw = getpwuid(getuid());
     const char *homedir = pw->pw_dir;
-    
+    //(TODO LATER) maybe add a flag to specify path to config 
     // check if the config file exists
     char configPath[PATH_MAX];
     snprintf(configPath, sizeof(configPath), "%s/.config/notewrapper/config.json", homedir);
-    if (debug) {printf("\e[0;32m[DEBUG]\e[0m the path to the config file is %s\n", configPath);}
-    if (stat(configPath, &(struct stat){0}) == -1) { // if the config directory do not exist
-      printf("\e[0;31mERROR: the config file (\e[0;32m$/.config/notewrapper/config.json\e[0;31m) does not exist.\nCompiling the program with \e[0;32mmake\e[0;31m should solve this error.\e[0m\n");
-      exit(1);
-    }
-    
-    // (TODO LATER) This might lack of debug info
+    debug("Path to the config file is %s", configPath);
+    error(stat(configPath, &(struct stat){0}) == -1, "program", "The config file %s does not exist.\nMaybe try the default path to the config ~/.config/notewrapper/config.json\nIf it still does not work, compiling the program with make should create a valid config file.", configPath); // if the config directory does not exist
+
+    // (TODO LATER) This might lack of shouldDebug info
     // opens config.json
     FILE *f = fopen(configPath, "r");
-    if (!f) {
-      printf("\e[0;31mERROR: The config file does exist, but can not be open. Something went wrong.\e[0;32m\n");
-      exit(1);
-    }
+    error(!f, "program", "The config file does exist, but can not be open.");
 
     // loads and read the config file
     //gets the size
@@ -54,29 +48,20 @@ int main(int argc, char *argv[]) {
     rewind(f);
     //gets the data
     char *data = malloc(size+1);
-    if (!data) {
-      fclose(f);
-      printf("\e[0;31mERROR: malloc failed allocating memory for the variable data. Something went wrong.\e[0m\n");
-      exit(1);
-    }
+    error(!data, "program", "malloc failed allocating memory for the variable data.");
     size_t readBytes = fread(data, 1, size, f); // 1 --> size of each item
-    if (readBytes != size) {
-      printf("\e[0;31mERROR: Failed to read config file (%zu bytes read, expected %ld)\e[0m\n", readBytes, size);
-      free(data);
-      fclose(f);
-      exit(1);
-    }
+    
+    if (readBytes!=size) {free(data);fclose(f);}
+    error(readBytes!=size, "program", "Failed to read config file (&zu bytes read, expected %ld)", readBytes, size);
     data[size] = '\0';
     fclose(f);
 
     // parse the JSON
     
     cJSON *json = cJSON_Parse(data);
-    if (!json) {
-      printf("\e[0;31mERROR: JSON parse error\e[0m\n");  // (TODO LATER) replace all printf("\e[0;31m with fpintf(stderr( "\e[0;31m and maybe debug messages too
-      free(data);
-      exit(1);
-    }
+    if (!json) {free(data);}
+    error(!json, "program", "JSON parse error");
+    
     // (TODO LATER) maybe add a default vault option
     cJSON *dirJson = cJSON_GetObjectItem(json, "directory");
     char *notesDirectoryString = malloc(PATH_MAX);
@@ -106,18 +91,15 @@ int main(int argc, char *argv[]) {
     char *editorToOpen = "neovim"; // default
     cJSON *editorToOpenJSON = cJSON_GetObjectItem(json, "editor");
     if (editorToOpenJSON || cJSON_IsString(editorToOpenJSON)) {
-      if (debug) {printf("\e[0;32m[DEBUG]\e[0m Editor in config.json is %s\n", editorToOpenJSON->valuestring);}
-      if (!isStringInArray(editorToOpenJSON->valuestring, supportedEditor, numEditors)) { // if we don't support this editor
-        printf("\e[0;31mERROR: %s (fetched from config.json) is not a supported editor. Supported editors are ", editorToOpenJSON->valuestring);
-        for (int i = 0; i < numEditors; i++) {
-          if (i < numEditors-2) {printf("\e[0;32m%s\e[0;31m, ", supportedEditor[i]);} // this if () {} else {} is used to get something like this "editor1, editor2, [...], editorn-2, editorn-1 and editorn"
-          else if (i == numEditors-2) {printf("\e[0;32m%s\e[0;31m and ", supportedEditor[i]);}
-          else {printf("\e[0;32m%s\e[0;31m.", supportedEditor[i]);}
-        }
-        printf("\e[0m\n");
-        exit(1);
-      }
+      debug("Editor in config.json is %s", editorToOpenJSON->valuestring);
+      error(!isStringInArray(editorToOpenJSON->valuestring, supportedEditor, numEditors), "user", "%s (fetched from config.json) is not a supported editor.");
       editorToOpen = strdup(editorToOpenJSON->valuestring); // we must strdup and not just = as we will free all the json after (before parsing args)
+    }
+    cJSON *journalRegexJSON = cJSON_GetObjectItem(json, "journalRegex");
+    char *journalRegex = ".*journal.*"; // default regex pattern for the journal
+    if (journalRegexJSON || cJSON_IsString(journalRegexJSON)) {
+      debug("The regex in config.json is %s", journalRegexJSON->valuestring);
+      journalRegex = strdup(journalRegexJSON->valuestring);
     }
     //cleans up 
     cJSON_Delete(json);
@@ -151,31 +133,18 @@ int main(int argc, char *argv[]) {
           printf("There is still no released version\n");
           return 0;
         } else if (strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--directory") == 0) {
-          if (i+1 == argc) { // if -nd or --directory was the last argument
-              printf("\e[0;31mERROR: Missing argument. Please use -d <path/to/directory> or --directory <path/to/directory>.\e[0m\n");
-              exit(1);
-          }
+          error(i+1==argc, "user", "Missing argument. Please use -d <path/to/directory> or --directory <path/to/directory>.");
           notesDirectoryString = argv[i+1];
           // (TODO LATER) Add a check if there is a arg after, if it is a directory, expand $, work with . and .., check if there is a dir.
           // it works with .. and . if the dir exists
-          // (TODO LATER) Add debug info for this flag and others
+          // (TODO LATER) Add shouldDebug info for this flag and others
         } else if (strcmp(argv[i], "-v") == 0 || strcmp(argv[i], "--vault") == 0) {
-          if (i+1 == argc) { // if -v or --vault was the last argument
-              printf("\e[0;31mERROR: Missing argument. Please use -v <vault's name> or --vault <vault's name>.\e[0m\n");
-              exit(1);
-          }
+          error(i+1==argc, "user", "Missing argument. Pleaase use -v <vault's name> or --vault <vault's name>");
           bypassVaultSelection = argv[i+1]; // (TODO LATER) Add security checks pass ti strndup. and if vault don't exist create one. SEE (TODO LATER) where bypassVaultSelection is checked
         } else if (strcmp(argv[i], "-n") == 0 || strcmp(argv[i], "--note") == 0) { // (TODO LATER) Broken if we put the -v flag after the -n flag
-          if (i+1 == argc) { // if -n or --note was the last argument
-              printf("\e[0;31mERROR: Missing argument. Please use -n <note's name> or --note <note's name>.\e[0m\n");
-              exit(1);
-          } else if (strcmp(bypassVaultSelection, HASH_MACRO) == 0) { // bypassVaultSelection is initialized to HASH_MACRO, if it is not changed it means -v wasn't specified
-            printf("\e[0;31mERROR: If you want to specify the note, you must also specify the vault with -v <vault's name> or --vault <vault's name>\e[0m\n");
-            exit(1);
-          } else {
-            bypassNoteSelection = argv[i+1];
-          }
-
+          error(i+1==argc, "user", "Missing argument. Please user -n <note's name> or --note <note's name>.");
+          error(strcmp(bypassVaultSelection, HASH_MACRO) == 0, "user", "If you want to specify the note, you must also specify the vault with -v <vault's name> or --vault <vault's name>.");
+          bypassNoteSelection = argv[i+1];
         } else if (strcmp(argv[i], "-j") == 0 || strcmp(argv[i], "--jump") == 0) {
           shouldJumpToEnd = 1;
         } else if (strcmp(argv[i], "-J") == 0 || strcmp(argv[i], "--no-jump") == 0) {
@@ -185,47 +154,25 @@ int main(int argc, char *argv[]) {
         } else if (strcmp(argv[i], "-R") == 0 || strcmp(argv[i], "--no-render") == 0) {
           shouldRender = 0;
         } else if (strcmp(argv[i], "-e") == 0 || strcmp(argv[i], "--editor") == 0) {
-            if (i+1 == argc) { // if -e or --editor was the last argument
-              printf("\e[0;31mERROR: Missing argument. Please use -e <editor> or --editor <editor>.\e[0m\n");
-              exit(1);
-            }
-            editorToOpen = argv[i+1];
-            if (debug) {
-              printf("\e[0;32m[DEBUG]\e[0m Editor specified with -e or --editor is %s\n", editorToOpen);
-            }
-            if (!isStringInArray(editorToOpen, supportedEditor, numEditors)) { // if we don't support this editor
-              printf("\e[0;31mERROR: %s (specified with -e or --editor) is not a supported editor. Supported editors are ", editorToOpen);
-              for (int i = 0; i < numEditors; i++) {
-                if (i < numEditors-2) {
-                  printf("\e[0;32m%s\e[0;31m, ", supportedEditor[i]); // this if () {} else {} is used to get something like this "editor1, editor2, [...], editorn-2, editorn-1 and editorn"
-                } else if (i == numEditors-2) {
-                  printf("\e[0;32m%s\e[0;31m and ", supportedEditor[i]);
-                } else {printf("\e[0;32m%s\e[0;31m.", supportedEditor[i]);
-                }
-              }
-              printf("\e[0m\n");
-              exit(1);
-            }
+          error(i+1==argc, "user", "Missing argument. Please use -e <editor> or --editor <editor>.");
+          editorToOpen = argv[i+1];
+          debug("Editor specified with -e or --editor is %s", editorToOpen);
         }
     }
-
-    if (!doesEditorExist(editorToOpen, debug)) { // check if the editor is in your PATH
-      printf("\e[0;31mERROR: %s is either not in your path or not installed.\e[0m\n", editorToOpen);
-      exit(1);
-    }
+    error(!doesEditorExist(editorToOpen, shouldDebug), "user", "%s is either not in your path or not installed.", editorToOpen);
 
     int shouldExit = 0;
     while(!shouldExit) {
       // this loop is the vault selector
       size_t vaultsCount = 0;
-      char **vaultsArray = getVaultsFromDirectory(notesDirectoryString, &vaultsCount, debug);
+      char **vaultsArray = getVaultsFromDirectory(notesDirectoryString, &vaultsCount, shouldDebug);
       qsort(vaultsArray, vaultsCount, sizeof(const char *), compareString); // sorts the vaults alphabetically
-      if (debug) {
-        printf("┌------------------------------\n\e[0;32m[DEBUG]\e[0m Available vaults:\n");
+      debug("Available vaults");
+      if (shouldDebug) {
         for (size_t i = 0; i < vaultsCount; i++) {
-          printf("%s\n", vaultsArray[i]);
+          altDebug("%s\n", vaultsArray[i]);
         }
-        printf("└ ------------------------------\n");
+        altDebug("└ ------------------------------\n");
       }
       
       // adds "create a new vault" into the vaultsArray
@@ -243,7 +190,7 @@ int main(int argc, char *argv[]) {
         vaultSelected = bypassVaultSelection;
           goto note_selection;
       }
-      vaultSelected = ncursesSelect(vaultsArray, "Select vault (Use arrows or WASD, Enter to select):", vaultsCount, extraOptions, debug);
+      vaultSelected = ncursesSelect(vaultsArray, "Select vault (Use arrows or WASD, Enter to select):", vaultsCount, extraOptions, shouldDebug);
       
       // now that we won't use vaultsArray in this iteration of the loop, we should free it and all its elements. (As this is memory in the heap and not the stack and thus is our responsability to manage)
       for (int i = 0; i < vaultsCount; i++) {
@@ -253,8 +200,7 @@ int main(int argc, char *argv[]) {
       }
       free(vaultsArray);
 
-      if (debug) {printf("\e[0;32m[DEBUG]\e[0m Selected vault:%s\n", vaultSelected);}
-      
+      debug("Selected vault: %s", vaultSelected);
       if (strcmp(vaultSelected,"Create a new vault") != 0 && strcmp(vaultSelected,"Settings") != 0 && strcmp(vaultSelected,"Quit (Ctrl+C)") != 0) {
 note_selection:
         bypassVaultSelection = HASH_MACRO; // we must reset bypassVaultSelection to not get stuck in a infinite loop of bypassing
@@ -262,15 +208,24 @@ note_selection:
         while (!shouldExit && !shouldChangeVault) {
           // this loop is the note selector
           int filesCount = 0;
-          char **filesArray = getNotesFromVault(notesDirectoryString, vaultSelected, &filesCount, debug);
+          char **filesArray = getNotesFromVault(notesDirectoryString, vaultSelected, journalRegex, &filesCount, shouldDebug);
           qsort(filesArray, filesCount, sizeof(const char *), compareString); // sorts the notes alphabetically
-          
-          if (debug) {
-            printf("┌------------------------------\n\e[0;32m[DEBUG]\e[0m Available notes:\n");
+          int journalCount = 0;
+          char **journalArray = getJournalsFromVault(notesDirectoryString, vaultSelected, journalRegex, &journalCount, shouldDebug);
+          qsort(journalArray, journalCount, sizeof(const char *), compareString);
+
+          // appends the journal at the end of filesArray
+          filesArray = realloc(filesArray, (filesCount + journalCount)*sizeof(char*));
+          for (int i = 0; i < journalCount; i++) {
+            filesArray[i + filesCount] = journalArray[i];
+          }
+          filesCount = filesCount + journalCount;
+          debug("Available notes and journals:");
+          if (shouldDebug) {
             for (size_t i = 0; i < filesCount; i++) {
-              printf("%s\n", filesArray[i]);
+              altDebug("%s\n", filesArray[i]);
             }
-            printf("└ ------------------------------\n");
+            altDebug("└------------------------------\n");
           }
           // adds options
           int extraNotesOptions = 4;
@@ -281,7 +236,7 @@ note_selection:
           filesArray[filesCount+3] = "Quit (Ctrl+C)";
           char *noteSelected;
           if (strcmp(bypassNoteSelection, HASH_MACRO) != 0) {
-            // (TODO LATER) Add debug info
+            // (TODO LATER) Add shouldDebug info
             noteSelected = bypassNoteSelection;
             if (isStringInArray(noteSelected, (const char **)filesArray, filesCount + extraNotesOptions)) {// (TODO LATER) Handle the case where the note name is one of the extraOptions
               goto open_note;
@@ -289,7 +244,7 @@ note_selection:
               goto note_creation;
             }
           }
-          noteSelected = ncursesSelect(filesArray, "Select note (Use arrows or WASD, Enter to select):", filesCount, extraNotesOptions, debug);
+          noteSelected = ncursesSelect(filesArray, "Select note (Use arrows or WASD, Enter to select):", filesCount, extraNotesOptions, shouldDebug);
           // now that we won't use filesArray in this iteration of the loop, we should free it and all its elements. (As this is memory in the heap and not the stack and thus is our responsability to manage)
           for (int i = 0; i < filesCount; i++) {
             if (noteSelected != filesArray[i]) { // we must prevent noteSelected to be freed. It will cause a lot of problems
@@ -297,47 +252,46 @@ note_selection:
             }
           }
           free(filesArray);
-          if (debug) {printf("\e[0;32m[DEBUG]\e[0m Selected note: %s\n", noteSelected);}
-          
+          debug("Selected note: %s", noteSelected);
           if (strcmp(noteSelected, "Create new note") != 0 && strcmp(noteSelected,"Back to vault selection") != 0 && strcmp(noteSelected, "Delete vault") != 0 && strcmp(noteSelected,"Quit (Ctrl+C)") != 0) {
 open_note:
             bypassNoteSelection =  HASH_MACRO; // we must reset bypassNoteSelection to avoid getting into an infinite loop of bypassing the note selection
             char fullPath[PATH_MAX]; // (TODO LATER) Find a more appropriate and descriptive name for the variable
             sprintf(fullPath, "%s/%s/%s", notesDirectoryString, vaultSelected, noteSelected); // (TODO LATER) change all sprintf to snprintf which checks for buffer size
-            openEditor(fullPath, editorToOpen, shouldRender, shouldJumpToEnd, debug);
+            openEditor(fullPath, editorToOpen, shouldRender, shouldJumpToEnd, shouldDebug);
           } else if (strcmp(noteSelected,"Create new note") == 0) {
 note_creation:
-            char *pathForNoteCreation = createNewNote(notesDirectoryString, vaultSelected, bypassNoteSelection, debug);
+            char *pathForNoteCreation = createNewNote(notesDirectoryString, vaultSelected, bypassNoteSelection, shouldDebug);
             bypassNoteSelection =  HASH_MACRO; // we must reset bypassNoteSelection to avoid getting into an infinite loop of bypassing the note selection
-            openEditor(pathForNoteCreation, editorToOpen, shouldRender, shouldJumpToEnd, debug);
+            openEditor(pathForNoteCreation, editorToOpen, shouldRender, shouldJumpToEnd, shouldDebug);
             //free(pathForNoteCreation);
           } else if (strcmp(noteSelected,"Back to vault selection") == 0) {
             shouldChangeVault = 1;
           } else if (strcmp(noteSelected, "Delete vault") == 0) {
             const char *yesNo[] = {"No, go back to note selection.", "Yes."};
-            char *answer = ncursesSelect((char **)yesNo, "Are you sure you want to delete the entire vault? This can not be undone.", 1, 1, debug);
-            if (debug) {printf("\e[0;32m[DEBUG]\e[0mYou answered: \e[0;32m%s\e[0m for deleting the vault named \e[0;32m%s\e[0m\n", answer, vaultSelected);}
+            char *answer = ncursesSelect((char **)yesNo, "Are you sure you want to delete the entire vault? This can not be undone.", 1, 1, shouldDebug);
+            debug("You answered: %s for deleting the vault %s", answer, vaultSelected);
             if (strcmp(answer, "Yes.") == 0) {
               // delete the vault after confirmation by the user
               char pathToRMRF[PATH_MAX];
               sprintf(pathToRMRF, "%s/%s", notesDirectoryString, vaultSelected);
-              if (debug) {printf("\e[0;32m[DEBUG]\e[0m Removed the directory: \e[0;32m%s\e[0m\n", pathToRMRF);}
+              debug("Removed the directory: %s", pathToRMRF);
               rmrf(pathToRMRF);
               shouldChangeVault = 1;
             }
           } else if (strcmp(noteSelected,"Quit (Ctrl+C)") == 0) {
-            if (debug) {printf("\e[0;32m[DEBUG]\e[0m The program was exited,\n");}
+            debug("The program was exited.");
             shouldExit = 1;
           }
         }
 
       } else if (strcmp(vaultSelected,"Create a new vault") == 0) {
-        createNewVault(notesDirectoryString, debug);
+        createNewVault(notesDirectoryString, shouldDebug);
       } else if (strcmp(vaultSelected,"Settings") == 0) {
         // (TODO LATER) add a way to modify the path to config.json
-        openEditor(configPath, editorToOpen, 0, 0, debug); // as this is not a md file we set render and jumptoEnfOfFile to 0
+        openEditor(configPath, editorToOpen, 0, 0, shouldDebug); // as this is not a md file we set render and jumptoEnfOfFile to 0
       } else if (strcmp(vaultSelected,"Quit (Ctrl+C)") == 0) {
-        if (debug) {printf("\e[0;32m[DEBUG]\e[0m The program was exited.\n");}
+        debug("The program was exited");
         shouldExit = 1;
       }
     }

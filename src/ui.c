@@ -1,6 +1,7 @@
 #include "ui.h"
 
-void createNewVault(char *dirToVault, int debug) {
+void createNewVault(char *dirToVault, int shouldDebug) {
+  // (TODO LATER) warn if it matches the regex for the journal
   //(TODO LATER) add a way to go back to vault selection
   int duplicateWarning = 0; // set to 1 later if the vault you tried to create already existed
 input_screen:
@@ -27,14 +28,11 @@ input_screen:
   wgetnstr(stdscr, vaultName, sizeof(vaultName)-1);
   refresh();
   endwin();
-  if (strcmp(vaultName, "") == 0) {
-    printf("\e[0;31mERROR: vaultName is empty\e[0m\n");
-    exit(1);
-  }
-  if (debug) {printf("\e[0;32m[DEBUG]\e[0m inputed vaultName=%s\n", vaultName);}
+  error(strcmp(vaultName, "") == 0, "user", "vaultName is empty"); // (TODO LATER) replace that with a warning
+  debug("Inputed vaultName=%s", vaultName);
   sanitize(vaultName);
-  if (debug) {printf("\e[0;32m[DEBUG]\e[0m sanitized vaultName=%s\n", vaultName);}
-  
+  debug("Sanitized vaultName=%s", vaultName);
+
   struct stat st = {0}; // https://stackoverflow.com/a/7430262
   char vaultFullPath[PATH_MAX];
   sprintf(vaultFullPath, "%s/%s/", dirToVault, vaultName);
@@ -48,7 +46,7 @@ input_screen:
   
 }
 
-char *createNewNote(char dirToVault[PATH_MAX], char *vaultFromDir, char *bypass, int debug) {
+char *createNewNote(char dirToVault[PATH_MAX], char *vaultFromDir, char *bypass, int shouldDebug) {
   // (TODO LATER) Add check. If the user creates a note with a name that already exists. it erases the old one
   // input from user for the name
   char fileName[256];
@@ -68,35 +66,27 @@ char *createNewNote(char dirToVault[PATH_MAX], char *vaultFromDir, char *bypass,
     fileName[sizeof(fileName)-1] = '\0';
   }
   // (TODO LATER) add a way to go back to note selection
-  if (strcmp(fileName, "") == 0) {
-    printf("\e[0;32mERROR: fileName is empty\e[0m\n"); // (TODO LATER) it should just go back to the note creation with a warning
-    exit(1);
-  }
+  error(strcmp(fileName, "") == 0, "user", "fileName is empty"); // replace this with a warning and add a warning if duplicate file and handle case where multiple warnings (if such case is possible)
   // check/sanitize the input
-  if (debug) {printf("\e[0;32m[DEBUG]\e[0m inputed fileName=%s\n", fileName);}
+  debug("Inputed fileName=%s", fileName);
   sanitize(fileName);
   // if there is no .md add an .md
   int len = strlen(fileName);
   if (fileName[len-1] != 'd' || fileName[len-2] != 'm' || fileName[len-3] != '.') { // there might be a cleaner way to do this
     strcat(fileName, ".md"); // this should not cause an overflow issue as we get at most 252 chars (+'.'+'m'+'d'+'\0' makes it to 256) with wgetnstr
   }
-  if (debug) {printf("\e[0;32m[DEBUG]\e[0m sanitize(fileName)=%s\n", fileName);} // (TODO LATER) Check if dirToVault+vaultFromDir+fileName > PATH_MAX
-
+  debug("Sanitized fileName=%s", fileName);
   char *fileFullPath = malloc(PATH_MAX); // this dinamically allocated because we use it in the main function to call openEditor
   sprintf(fileFullPath, "%s/%s/%s", dirToVault, vaultFromDir, fileName);
   FILE *filePointer;
-  filePointer = fopen(fileFullPath, "w"); // creates and opens the file
-  if (filePointer == NULL) {
-    printf("\e[0;31mERROR: The file couldn't be created. Something went wrong.\e[0m\n");
-    free(fileFullPath);
-    exit(1);
-  }
+  filePointer = fopen(fileFullPath, "w"); // creates and opens the file (TODO LATER) Maybe check if the file really doesn't exist
+  error(filePointer == NULL, "program", "The %s couldn't be created.", fileFullPath);
   fprintf(filePointer, "### %s\n", fileName); //(TODO LATER) Add a way to configure default behaviour when creating a file
   fclose(filePointer); // closes the file so that nvim could open it
   return fileFullPath;
 }
 
-char* ncursesSelect(char **options, char *optionsText, size_t optionsNumber, size_t extraOptionsNumber, int debug) {
+char* ncursesSelect(char **options, char *optionsText, size_t optionsNumber, size_t extraOptionsNumber, int shouldDebug) {
     int highlight = 0; //curently highlighted option
     int key;
 
