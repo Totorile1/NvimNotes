@@ -3,5 +3,7 @@
   "render": true,
   "jumpToEndOfFileOnLaunch": true,
   "editor": "neovim",
-  "journalRegex": ".*journal.*"
+  "journalRegex": ".*journal.*",
+  "dateEntry": "# %a %d %m %Y",
+  "newLineOnOpening": true
 }

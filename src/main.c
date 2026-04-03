@@ -83,25 +83,43 @@ int main(int argc, char *argv[]) {
     cJSON *shouldRenderJSON = cJSON_GetObjectItem(json, "render");
     if (shouldRenderJSON && cJSON_IsBool(shouldRenderJSON)) {
         shouldRender = cJSON_IsTrue(shouldRenderJSON) ? 1 : 0;
-    }
+    } else {debug("config.json did not contained a correct \"render\" value. The default is 1.");}
+    
     int shouldJumpToEnd = 1;
     cJSON *shouldJumpToEndJSON = cJSON_GetObjectItem(json, "jumpToEndOfFileOnLaunch");
     if (shouldJumpToEndJSON && cJSON_IsBool(shouldJumpToEndJSON)) {
       shouldJumpToEnd = cJSON_IsTrue(shouldJumpToEndJSON) ? 1 : 0;
-    }
+    } else {debug("config.json did not contained a correct \"jumpToEndOfFileOnLaunch\" value. The default is 1.");}
+    
     char *editorToOpen = "neovim"; // default
     cJSON *editorToOpenJSON = cJSON_GetObjectItem(json, "editor");
-    if (editorToOpenJSON || cJSON_IsString(editorToOpenJSON)) {
+    if (editorToOpenJSON && cJSON_IsString(editorToOpenJSON)) {
       debug("Editor in config.json is %s", editorToOpenJSON->valuestring);
       error(!isStringInArray(editorToOpenJSON->valuestring, supportedEditor, numEditors), "user", "%s (fetched from config.json) is not a supported editor.");
       editorToOpen = strdup(editorToOpenJSON->valuestring); // we must strdup and not just = as we will free all the json after (before parsing args)
-    }
+    } else {debug("config.json did not contained a correct \"editor\" value. The default is neovim.");}
+    
     cJSON *journalRegexJSON = cJSON_GetObjectItem(json, "journalRegex");
     char *journalRegex = ".*journal.*"; // default regex pattern for the journal
-    if (journalRegexJSON || cJSON_IsString(journalRegexJSON)) {
+    if (journalRegexJSON && cJSON_IsString(journalRegexJSON)) {
       debug("The regex in config.json is %s", journalRegexJSON->valuestring);
       journalRegex = strdup(journalRegexJSON->valuestring);
-    }
+    } else {debug("config.json did not contained a correct \"journalRegex\" value. The default is .*journal.*");}
+
+    char *timeFormat = "# \%a \%d \%m \%Y";// default
+    cJSON *timeFormatJSON = cJSON_GetObjectItem(json, "dateEntry");
+    if (timeFormatJSON && cJSON_IsString(timeFormatJSON)) {
+      debug("The time format in config.json is %s", timeFormatJSON->valuestring);
+      timeFormat = strdup(timeFormatJSON->valuestring);
+    } else {debug("config.json did not contained a correct \"dateEntry\" value. The default is \"# \%a \%d \%m \%Y\".");}
+
+    int newLineOnOpening = 1;
+    cJSON *newLineOnOpeningJSON = cJSON_GetObjectItem(json, "newLineOnOpening");
+    if (newLineOnOpeningJSON && cJSON_IsBool(newLineOnOpeningJSON)) {
+      debug("The value for newLineOnOpening in config.json is %d", cJSON_IsTrue(newLineOnOpeningJSON));
+      newLineOnOpening = cJSON_IsTrue(newLineOnOpeningJSON) ? 1 : 0;
+    } else {debug("config.json did not contained a correct \"newLineOnOpening\" value. The default is true.");}
+
     //cleans up 
     cJSON_Delete(json);
     free(data);
@@ -258,13 +276,30 @@ note_selection:
           if (strcmp(noteSelected, "Create new note") != 0 && strcmp(noteSelected,"Back to vault selection") != 0 && strcmp(noteSelected, "Delete vault") != 0 && strcmp(noteSelected,"Quit (Ctrl+C)") != 0) {
 open_note:
             bypassNoteSelection =  HASH_MACRO; // we must reset bypassNoteSelection to avoid getting into an infinite loop of bypassing the note selection
-            char fullPath[PATH_MAX]; // (TODO LATER) Find a more appropriate and descriptive name for the variable
+            char *fullPath = malloc(PATH_MAX); // (TODO LATER) Find a more appropriate and descriptive name for the variable
             sprintf(fullPath, "%s/%s/%s", notesDirectoryString, vaultSelected, noteSelected); // (TODO LATER) change all sprintf to snprintf which checks for buffer size
+            // if it is a journal we must update it before
+            regex_t regex;
+            int regexReturn = regcomp(&regex, journalRegex, 0);
+            error(regexReturn, "program", "Regex compilation failed.");
+            regexReturn = regexec(&regex, noteSelected, 0, NULL, 0);
+            if (!regexReturn) { // if the regex matches -> it's a journal
+              debug("%s is a journal. Updating it...", noteSelected);
+              fullPath = updateJournal(fullPath, noteSelected, timeFormat, shouldDebug); // we return the path. As if it is a divided journal we must point to the correct entry
+            }
+            if (newLineOnOpening) { //(TODO LATER) For some reason this does not applies to journals?
+              appendToFile(fullPath, "\n", shouldDebug);
+            }
             openEditor(fullPath, editorToOpen, shouldRender, shouldJumpToEnd, shouldDebug);
+            free(fullPath);
           } else if (strcmp(noteSelected,"Create new note") == 0) {
 note_creation:
             char *pathForNoteCreation = createNewNote(notesDirectoryString, vaultSelected, bypassNoteSelection, shouldDebug);
+            // (TODO LATER) Handle journal creation
             bypassNoteSelection =  HASH_MACRO; // we must reset bypassNoteSelection to avoid getting into an infinite loop of bypassing the note selection
+            if (newLineOnOpening) {
+              appendToFile(pathForNoteCreation, "\n", shouldDebug);
+            }
             openEditor(pathForNoteCreation, editorToOpen, shouldRender, shouldJumpToEnd, shouldDebug);
             //free(pathForNoteCreation);
           } else if (strcmp(noteSelected,"Back to vault selection") == 0) {

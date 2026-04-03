@@ -81,6 +81,16 @@ int doesEditorExist (char *editorToCheck, int shouldDebug) {     // Some exectua
     return 0; // program not found
 }
 
+char *getFormatedTime(char *format, int shouldDebug) {
+  debug("Inputed time format is %s", format);
+  time_t t = time(NULL);
+  struct tm *tm = localtime(&t);
+  char *buf = malloc(BUFFER_SIZE);
+  strftime(buf, BUFFER_SIZE, format, tm);
+  debug("Formated time is %s", buf);
+  return buf;
+}
+
 int isStringInArray(const char *string, const char **array, const int len) {
   for (int i = 0; i < len; i++) {
     if (strcmp(string, array[i]) == 0) {
@@ -88,6 +98,30 @@ int isStringInArray(const char *string, const char **array, const int len) {
     }
   }
   return 0;
+}
+
+int isStringInFile(const char *path, const char *string, const int shouldDebug) {
+  FILE *file = fopen(path, "r");
+  error(file == NULL, "program", "While searching for \"%s\", we could not open file %s", string, path);
+  char buf[BUFFER_SIZE];
+  
+  while (fgets(buf, BUFFER_SIZE, file) != NULL) {
+    if (strstr(buf, string) != NULL) {
+      debug("%s contains the substring %s", buf, string);
+      return 1;
+    }
+  }
+  debug("The string %s is not inside %s", string, path);
+  return 0;
+}
+
+void appendToFile(const char *path, const char *string, const int shouldDebug) {
+  // (TODO LATER) we should check if it is not already at the end and not append. (Usefull for \n)
+  FILE *file = fopen(path, "a");
+  error(file == NULL, "program", "could not open %s", path);
+  fprintf(file, "%s", string);
+  fclose(file);
+  debug("%s was appended to %s succesfully", string, path);
 }
 
 void sanitize(char *string) {

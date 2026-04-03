@@ -16,6 +16,8 @@
 #include <cjson/cJSON.h>
 #include <regex.h>
 #include <errno.h> 
+#include <time.h>
+#define BUFFER_SIZE 256 //standard buffer size.
 #define debug(message, ...) \
     _debug(shouldDebug, __FILE__, __LINE__, __func__, message, ##__VA_ARGS__)
 #define altDebug(message, ...) \
@@ -27,6 +29,7 @@
 extern const char *supportedEditor[]; // array of supported editors
 extern const int numEditors; // number of supported editors
 
+//(TODO LATER) organise this mess
 int compareString(const void *a, const void *b);
 //compares two strings alphabetically.
 //this function is used for qsort
@@ -44,6 +47,10 @@ int isStringInArray(const char *string, const char **array, const int len);
 // Returns 1 if the string is in the array
 // Returns 0 if the string is not in the array
 // If you want to only check the first n elements of the array, pass n as len
+int isStringInFile(const char *path, const char *string, const int shouldDebug);
+// returns 1 if the string is in the file
+// returns 0 if the string is not in the file
+void appendToFile(const char *path, const char *string, const int shouldDebug);
 void sanitize(char *string);
 // replace unwanted chars by '_'. '.' is replaced if it is only the first two chars
 int rmrf(char *path);
@@ -54,4 +61,8 @@ int openEditor(char *path, char *editor, int render, int endOfFile, int debug);
 // render: if we render the .md file with Vivify
 // endOfFile: if we put the cursor at the end of the file when opening
 // The program resumes when the editor is closed
+char *getFormatedTime(char *format, int shouldDebug);
+// see https://pubs.opengroup.org/onlinepubs/7908799/xsh/strftime.html? for formats
+// returns a string (buffered at 256 chars)
+// you should not forgot to free this string as it is in the heap
 #endif
