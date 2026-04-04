@@ -7,7 +7,7 @@ The goal was a terminal-based interface for accessing vaults and notes using sta
 
 ### How to install
 1. Have installed `ncurses`, `cjson` and `pkg-config`.
-2. Have a supported editor: `vim` and `neovim` (for the moment)
+2. Have a supported editor: `vim`, `neovim` and `nano` (for the moment)
 3. Clone the repository.
 ```shell
 git clone https://github.com/Totorile1/NoteWrapper.git
@@ -22,6 +22,25 @@ make
 
 ### Usage
 If you want to render with Vivify with the flags `-r`, `--render` or with the option in the config file, you must have installed the plugins for your specific editor ([for Vim and Neovim](https://github.com/jannis-baum/vivify.vim))
+
+
+### Editor support
+
+`NoteWrapper` relies on certain editor features, so not all of its functionality is supported by every editor.
+
+Here are the features that depend on editor support:
+
+- **Bufferless rendering**: As soon as you write something in the note (even without saving), it is rendered.
+- **Cursor following**: The rendered view follows your cursor. For example, if you move to the bottom of a note, the rendered view will also scroll to the bottom.
+- **Jump to end on open**: Automatically jumps to the end of the file when opening it.
+
+The first two features depend on [Vivify's plugin for editors](https://github.com/jannis-baum/Vivify?tab=readme-ov-file#existing-integration).
+
+| Editor  | Bufferless | Cursor | Jump to end |
+|---------|------------|--------|-------------|
+| Neovim  | ✅         | ✅     | ✅          |
+| Vim     | ✅         | ✅     | ✅          |
+| Nano    | ❌         | ❌     | ✅          |
 
 ### Configuration
 Change `$/.config/notewrapper/config.json`. If it does not exist. On building, it should copy a default config.
@@ -49,3 +68,4 @@ Change `$/.config/notewrapper/config.json`. If it does not exist. On building, i
 - [ ] Add a way to delete notes
 - [x] Comply with GPL-3 notice (add info about no waranty, etc.)
 - [ ] A converter for both type of journals
+

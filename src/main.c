@@ -193,7 +193,7 @@ int main(int argc, char *argv[]) {
       } else if (strcmp(argv[i], "--version") == 0) {
           printf("There is still no released version\n\n     Copyright (C) 2026 Tomás Rivera\n     License GPLv3: GNU GPL version 3 <https://gnu.org/licenses/gpl.html>.\n     This is free software: you are free to change and redistribute it.\n     There is NO WARRANTY, to the extent permitted by law.\n\n     Written by Tomás Rivera.\n");
           return 0;
-      } else if (argv[i][0] == '-') {
+      } else if (argv[i][0] == '-' && strcmp(argv[i], "-V") != 0 && strcmp(argv[i], "--verbose") != 0 && strcmp(argv[i], "-c") != 0 && strcmp(argv[i], "--config")) {
           error(1, "user", "unexpected argument \"%s\" found\nFor more information, try \"--help\".", argv[i]);
       }
     }

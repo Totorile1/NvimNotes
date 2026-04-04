@@ -1,7 +1,7 @@
 #include "utils.h"
 
-const char *supportedEditor[] = {"neovim", "vim"};
-const int numEditors = 2;
+const char *supportedEditor[] = {"neovim", "vim", "nano"};
+const int numEditors = 3;
 
 int compareString(const void *a, const void *b) {
     const char *str1 = *(const char **)a;
@@ -169,7 +169,7 @@ int rmrf(char *path) {
 }
 
 
-int openEditor(char *path, char *editor, int render, int shouldJumpToEndOfFile, int shouldDebug) {
+/*int openEditor(char *path, char *editor, int render, int shouldJumpToEndOfFile, int shouldDebug) {
   // (TODO LATER) Bug app breaks if browser was not already launched before vivify
   // (TODO LATER) for nvim and vim we should check if there is swap files or recovery files and handle that
   pid_t pid = fork(); // this forking allows the programs to return when nvim is closed
@@ -221,11 +221,121 @@ int openEditor(char *path, char *editor, int render, int shouldJumpToEndOfFile, 
           error(1, "program", "execlp() failed.");
         }
       }
+    } else if (strcmp(editor, "nano") == 0) {
+      if (render) { // (TODO LATER) We should check if Vivify exist
+        if (shouldJumpToEndOfFile) {
+          debug("Running nano + %s && viv %s:99999", path, path);
+          execlp("nano", "nano", "+", path, NULL);
+          // we need to append :99999 to the path for vivify to go at the end
+          strncat(path, ":99999", PATH_MAX);
+          execlp("viv", "viv", path, NULL);
+        } else {
+          debug("Running nano %s && viv %s", path, path);
+          execlp("nano", "nano", path, NULL);
+          execlp("viv", "viv", path, NULL);
+        }
+      } else {
+        if (shouldJumpToEndOfFile) {
+          debug("Running nano + %s", path);
+          execlp("nano", "nano", "+", path, NULL);
+          error(1, "program", "execlp() failed.");
+        } else {
+          debug("Running nano %s", path);
+          execlp("nano", "nano", path, NULL);
+        }
+      }
     }
   } else {
     // Parent process: wait for child to finish
     int status;
     waitpid(pid, &status, 0);
   } // (TODO LATER) add a options to kill the browser when closing. This will solve the bug where -R does renders when the file was previously opened with -r.
+  return 0;
+}*/
+int openEditor(char *path, char *editor, int render, int shouldJumpToEndOfFile, int shouldDebug) {
+
+  pid_t editor_pid = fork();
+  error(editor_pid < 0, "program", "fork() failed.");
+
+  if (editor_pid == 0) {
+    // =========================
+    // CHILD: launch editor
+    // =========================
+
+    // ---- NEOVIM / VIM ----
+    if (strcmp(editor, "neovim") == 0 || strcmp(editor, "vim") == 0) {
+      const char *bin = (strcmp(editor, "neovim") == 0) ? "nvim" : "vim";
+
+      if (render) {
+        if (shouldJumpToEndOfFile) {
+          debug("Running %s +:$ +:Vivify %s", bin, path);
+          execlp(bin, bin, "+:$", "+:Vivify", path, NULL);
+        } else {
+          debug("Running %s +:Vivify %s", bin, path);
+          execlp(bin, bin, "+:Vivify", path, NULL);
+        }
+      } else {
+        if (shouldJumpToEndOfFile) {
+          debug("Running %s +:$ %s", bin, path);
+          execlp(bin, bin, "+:$", path, NULL);
+        } else {
+          debug("Running %s %s", bin, path);
+          execlp(bin, bin, path, NULL);
+        }
+      }
+
+      error(1, "program", "execlp() failed.");
+    }
+
+    // ---- NANO ----
+    else if (strcmp(editor, "nano") == 0) {
+
+      // If render enabled → spawn viv in parallel
+      if (render) {
+        pid_t viv_pid = fork();
+        error(viv_pid < 0, "program", "fork() failed.");
+
+        if (viv_pid == 0) {
+          // GRANDCHILD → viv
+          char viv_path[PATH_MAX];
+          strncpy(viv_path, path, PATH_MAX - 1);
+          viv_path[PATH_MAX - 1] = '\0';
+
+          if (shouldJumpToEndOfFile) {
+            strncat(viv_path, ":99999",
+                    PATH_MAX - strlen(viv_path) - 1);
+          }
+
+          debug("Running viv %s", viv_path);
+          execlp("viv", "viv", viv_path, NULL);
+          error(1, "program", "execlp() failed.");
+        }
+        // IMPORTANT: do NOT wait for viv
+      }
+
+      // Now run nano (this replaces the child process)
+      if (shouldJumpToEndOfFile) {
+        debug("Running nano + %s", path);
+        execlp("nano", "nano", "+", path, NULL);
+      } else {
+        debug("Running nano %s", path);
+        execlp("nano", "nano", path, NULL);
+      }
+
+      error(1, "program", "execlp() failed.");
+    }
+
+    // ---- UNKNOWN EDITOR ----
+    else {
+      error(1, "program", "Unknown editor.");
+    }
+  }
+
+  // =========================
+  // PARENT: wait ONLY editor
+  // =========================
+  int status;
+  waitpid(editor_pid, &status, 0);
+
   return 0;
 }
