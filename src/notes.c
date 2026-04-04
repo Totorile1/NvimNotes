@@ -192,9 +192,8 @@ char *updateJournal(char *path, char *journal, char *timeFormat, int shouldDebug
         error(strlen(path)+1+strlen(dateWithExtension)+1>PATH_MAX, "Error file path too long. %s/%s must not exceed PATH_MAX", path, dateWithExtension); 
         snprintf(temp, PATH_MAX, "%s/%s", path, dateWithExtension);
         strncpy(path, temp, PATH_MAX);
-        if (!isStringInArray(date, (const char **)entryArray, entryCount)) { // it only creates it if it doesn't already exist
+        if (!isStringInArray(dateWithExtension, (const char **)entryArray, entryCount)) { // it only creates it if it doesn't already exist
                                                               // if it does exist it will just pass the full path
-          
           debug("Creating entry %s inside %s", date, path);
           FILE *file;
           file = fopen(path, "w");
