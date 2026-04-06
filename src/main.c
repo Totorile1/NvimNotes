@@ -242,7 +242,7 @@ int main(int argc, char *argv[]) {
     error(!doesEditorExist(editorToOpen, shouldDebug), "user", "%s is either not in your path or not installed.", editorToOpen);
     debug("Finished parsing the attribute flags");
 
-    if (doesBackup) { // (TODO LATER) If this takes too much time we should add a warning and when implementing multiple directories for vault we should verifiy this works.
+    if (doesBackup) { // (TODO LATER) when implementing multiple directories for vault we should verifiy this works.
       handleBackups(notesDirectoryString, pathToBackup, homedir, interval, shouldDebug);
     }
 

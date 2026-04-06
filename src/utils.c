@@ -1,5 +1,4 @@
 #include "utils.h"
-#include <stdio.h>
 
 const char *supportedEditor[] = {"neovim", "vim", "nano"};
 const int numEditors = 3;
@@ -124,54 +123,6 @@ void handleBackups(const char *pathOfVaults, const char *pathOfBackup, const cha
         copyDir(pathOfVaults, pathOfBackup, shouldDebug);
     }
 }
-/*void handleBackups(const char *pathOfVaults, const char *pathOfBackup, const char *homeDir, const int interval, const int shouldDebug) {
-  int shouldBackup = 0;
-  time_t now = time(NULL);
-  debug("Time since epoch is %ld", (long)now);
-  char cacheFilePATH[PATH_MAX];
-  // we store in this file the epoch time of the last backup to see if we need to backup
-  snprintf(cacheFilePATH, PATH_MAX, "%s/.cache/notewrapper/backupTime.txt", homeDir);
-  FILE *cacheFile = fopen(cacheFilePATH, "r");
-  if (errno == ENOENT) { // if the files does not exists. We backup and set the backup time to now
-    shouldBackup = 1;
-    fclose(cacheFile);
-    cacheFile = fopen(cacheFilePATH, "w");
-    fprintf(cacheFile, "%ld", (long)now);
-    fclose(cacheFile);
-  } else {
-    char line[64];
-    if (fgets(line, sizeof(line), cacheFile) == NULL) {
-        // Error reading the file
-        error(1, "program", "Failed to read backup cache file (at %s)", cacheFilePATH);
-        fclose(cacheFile);
-        return;
-    }
-    fclose(cacheFile);
-
-    // Convert the read line to long
-    char *endptr;
-    long lastBackupTime = strtol(line, &endptr, 10);
-    if (endptr == line || (*endptr != '\n' && *endptr != '\0')) {
-        error(1, "program", "Invalid timestamp in cache file: %s", line);
-        return;
-    }
-
-    if (difftime(now, lastBackupTime) > interval) {
-        shouldBackup = 1;
-        // Update the cache file with current time
-        cacheFile = fopen(cacheFilePATH, "w");
-        if (cacheFile == NULL) {
-            error(1, "program", "Failed to open cache file for writing");
-            return;
-        }
-        fprintf(cacheFile, "%ld\n", (long)now);
-        fclose(cacheFile);
-    }
-  }
-  if (shouldBackup) {
-    copyDir(pathOfVaults, pathOfBackup, shouldDebug);
-  }
-}*/
 
 int doesEditorExist (char *editorToCheck, int shouldDebug) {     // Some exectuables have not exaclty the same name as the editor.
   char *editor;   
@@ -292,89 +243,6 @@ int rmrf(char *path) {
 }
 
 
-/*int openEditor(char *path, char *editor, int render, int shouldJumpToEndOfFile, int shouldDebug) {
-  // (TODO LATER) Bug app breaks if browser was not already launched before vivify
-  // (TODO LATER) for nvim and vim we should check if there is swap files or recovery files and handle that
-  pid_t pid = fork(); // this forking allows the programs to return when nvim is closed
-  error(pid<0, "program", "fork() failed.");
-  if (pid == 0) {
-      // Child process: replace with editor of choice
-    if (strcmp(editor, "neovim") == 0) { // opens with Neovim 
-      if (render) { // don't render using vivify
-        if (shouldJumpToEndOfFile) { // goes to the end of the file on opening.
-          // :$ goes to the end of the file. :Vivify runs vivify
-          debug("Running nvim +:$ +:Vivify %s", path);
-          execlp("nvim", "nvim", "+:$", "+:Vivify", path, NULL);
-          error(1, "program", "execlp() failed."); // if something after execlp is executed it means something failed. Normally this function is not called
-        } else { // don't go to the end of the file
-          debug("Running nvim +:Vivify %s", path);
-          execlp("nvim", "nvim", "+:Vivify", path, NULL);
-          error(1, "program", "execlp() failed.");
-        }
-      } else { // don't render using vivify
-        if (shouldJumpToEndOfFile) { // go to end of the file on opening
-          debug("Running nvim +:$ %s", path);
-          execlp("nvim", "nvim", "+:$", path, NULL);
-          error(1, "program", "execlp() failed.");
-        } else { // don't go to the end of the file on opening
-          debug("Running nvim %s", path);  
-          execlp("nvim", "nvim", path, NULL);
-          error(1, "program", "execlp() failed.");
-        }
-      }
-    } else if (strcmp(editor, "vim") == 0) { // opens with Vim // see comments for neovim for explanations
-      if (render) {
-        if (shouldJumpToEndOfFile) {
-          debug("Running vim +:$ +:Vivify %s", path);  
-          execlp("vim", "vim", "+:$", "+:Vivify", path, NULL);
-          error(1, "program", "execlp() failed.");
-        } else {
-          debug("Running vim +:Vivify %s", path);  
-          execlp("vim", "vim", "+:Vivify", path, NULL);
-          error(1, "program", "execlp() failed.");
-        }
-      } else {
-        if (shouldJumpToEndOfFile) {
-          debug("Running vim +:$ %s", path);  
-          execlp("vim", "vim", "+:$", path, NULL);
-          error(1, "program", "execlp() failed.");
-        } else {
-          debug("Running vim %s", path);
-          execlp("vim", "vim", path, NULL);
-          error(1, "program", "execlp() failed.");
-        }
-      }
-    } else if (strcmp(editor, "nano") == 0) {
-      if (render) { // (TODO LATER) We should check if Vivify exist
-        if (shouldJumpToEndOfFile) {
-          debug("Running nano + %s && viv %s:99999", path, path);
-          execlp("nano", "nano", "+", path, NULL);
-          // we need to append :99999 to the path for vivify to go at the end
-          strncat(path, ":99999", PATH_MAX);
-          execlp("viv", "viv", path, NULL);
-        } else {
-          debug("Running nano %s && viv %s", path, path);
-          execlp("nano", "nano", path, NULL);
-          execlp("viv", "viv", path, NULL);
-        }
-      } else {
-        if (shouldJumpToEndOfFile) {
-          debug("Running nano + %s", path);
-          execlp("nano", "nano", "+", path, NULL);
-          error(1, "program", "execlp() failed.");
-        } else {
-          debug("Running nano %s", path);
-          execlp("nano", "nano", path, NULL);
-        }
-      }
-    }
-  } else {
-    // Parent process: wait for child to finish
-    int status;
-    waitpid(pid, &status, 0);
-  } // (TODO LATER) add a options to kill the browser when closing. This will solve the bug where -R does renders when the file was previously opened with -r.
-  return 0;
-}*/
 int openEditor(char *path, char *editor, int render, int shouldJumpToEndOfFile, int shouldDebug) {
 
   pid_t editor_pid = fork();
