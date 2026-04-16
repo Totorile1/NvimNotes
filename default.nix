@@ -13,6 +13,9 @@ pkgs.stdenv.mkDerivation {
   buildInputs = [
     pkgs.ncurses
     pkgs.cjson
+    pkgs.fzf
+    pkgs.gnused
+    pkgs.ripgrep
   ];
 
   buildPhase = ''

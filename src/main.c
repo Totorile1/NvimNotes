@@ -334,10 +334,9 @@ note_selection:
           // this loop is the note selector
           int filesCount = 0;
           char **filesArray = getNotesFromVault(notesDirectoryString, vaultSelected, journalRegex, &filesCount, shouldDebug);
-          qsort(filesArray, filesCount, sizeof(const char *), compareString); // sorts the notes alphabetically
+          
           int journalCount = 0;
           char **journalArray = getJournalsFromVault(notesDirectoryString, vaultSelected, journalRegex, &journalCount, shouldDebug);
-          qsort(journalArray, journalCount, sizeof(const char *), compareString);
 
           // appends the journal at the end of filesArray
           filesArray = realloc(filesArray, (filesCount + journalCount)*sizeof(char*));
@@ -345,6 +344,9 @@ note_selection:
             filesArray[i + filesCount] = journalArray[i];
           }
           filesCount = filesCount + journalCount;
+
+          // we sort them // (TODO LATER) THis doesn't seem to sort them
+          qsort(filesArray, filesCount, sizeof(const char *), compareString);
           debug("Available notes and journals:");
           if (shouldDebug) {
             for (int i = 0; i < filesCount; i++) {

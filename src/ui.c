@@ -145,6 +145,113 @@ char *createNewNote(char dirToVault[PATH_MAX], char *vaultFromDir, int bypass, c
   return fileName;
 }
 
+char* fzfSelect(char *pathToFiles, char *selectText, int shouldDebug) {
+    // we are gonna write each line of each files (with the filename and the line number to an index)
+    char command[CMD_BUFFER];
+    char indexFile[] = "/tmp/notewrapper_index_XXXXXX";
+
+    int fd = mkstemp(indexFile);
+    error(fd == -1, "program", "mkstemp failed");
+    close(fd);
+
+    /*
+     * STEP 1:
+     * Build index once into temp file
+     * format: file:line:content
+     */
+    snprintf(command, sizeof(command),
+        "rg --line-number --no-heading --color=never . \"%s\" > %s",
+        pathToFiles,
+        indexFile
+    );
+    
+    debug("INDEX CMD: %s", command);
+
+    if (system(command) != 0) {
+        unlink(indexFile);
+        error(1, "program", "rg indexing failed");
+    }
+
+    /*
+     * STEP 2:
+     * Use fzf on the index file (NO rg anymore)
+     */
+    /*
+      EXPLANATION:
+      
+      cat %s
+        → feeds prebuilt index file (format: file:line:content) into fzf
+      
+      fzf --delimiter ':'
+        → splits each line into fields:
+           {1} = file path
+           {2} = line number
+           {3} = content
+      
+      --prompt
+        → UI prompt text shown in fzf
+      
+      --preview
+        → runs a shell command for selected item:
+           file={1}  → current file
+           line={2}  → line number of match
+      
+      nl -ba "$file"
+        → prints file with line numbers
+      
+      sed -n "$((line-5)),$((line+5))p"
+        → extracts a window of 5 lines above and below match
+      
+      sed "... -> ..."
+        → highlights the matched line (middle of window) with red arrow
+      
+      --preview-window=right:60%:hidden
+        → preview appears on right, 60% width, initially hidden
+      
+      --bind 'change:show-preview'
+        → preview only appears after first selection change (not at startup)
+    */
+    snprintf(command, sizeof(command),
+             "cat %s | fzf --delimiter ':' --prompt='%s' "
+             "--preview 'file={1}; line={2}; nl -ba \"$file\" | sed -n \"$((line-5)),$((line+5))p\" | sed \"$((line-$(($((line-5))))+1))s/^/\\x1b[31m-> \\x1b[0m/\"' "
+             "--preview-window=right:60%%:hidden "
+             "--bind 'change:show-preview'",
+             indexFile,
+             selectText ? selectText : "> "
+    );
+    debug("FZF CMD: %s", command);
+
+    FILE *fzfPipe = popen(command, "r");
+    if (!fzfPipe) {
+        unlink(indexFile);
+        error(1, "program", "popen failed");
+    }
+
+    char buffer[RESULT_BUFFER];
+    char *result = NULL;
+
+    if (fgets(buffer, sizeof(buffer), fzfPipe)) {
+        buffer[strcspn(buffer, "\n")] = '\0';
+        result = strdup(buffer);
+    }
+
+    // cut at first ':'
+    result = strtok(result, ":");
+    // cut at / (because we need the full paths before and we only need to return the journal entry)
+    char *token = strtok(result, "/");
+    result = NULL;
+    while (token != NULL) {
+      result = token;
+      token = strtok(NULL, "/"); //Passing NULL means “don’t start a new string, resume
+    }
+
+    // clean up
+    pclose(fzfPipe);
+    unlink(indexFile);
+
+    return result;
+}
+
 char* ncursesSelect(char **options, char *optionsText, int optionsNumber, int extraOptionsNumber, char *bottomText, char *middleText, char *topText, int shouldDebug) {
     int highlight = 0; //curently highlighted option
     int key;

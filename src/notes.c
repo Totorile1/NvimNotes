@@ -1,6 +1,7 @@
 #include "notes.h"
+#include "ui.h"
+#include <stdio.h>
 
-// (TODO LATER) Check if it isn't a know media file like .jpg, etc. more generally only text, code or markdown file should be accepted. maybe se if it is in utf8?
 char **getJournalsFromVault(char *pathToVault, char *vault, char *journalRegex,  int *count, int shouldDebug) {
     debug("Searching %s for journals", vault);
     // originally from https://www.geeksforgeeks.org/c/c-program-list-files-sub-directories-directory/
@@ -48,7 +49,6 @@ char **getJournalsFromVault(char *pathToVault, char *vault, char *journalRegex, 
 
 char** getNotesFromVault(char *pathToVault, char *vault, char *journalRegex, int *count, int shouldDebug) {
     // this function is inputed a path to a vault (which was selected before) and outpus all the suitable notes (so not the hidden ones)
-    // (TODO LATER) Check how it handles non .md files
     // originally from https://www.geeksforgeeks.org/c/c-program-list-files-sub-directories-directory/
     debug("Searching %s for notes", vault);
     struct dirent *vaultEntry; // (TODO LATER) change name of these variables. notesDirectory is dumb as it is the directory of vaults
@@ -62,29 +62,30 @@ char** getNotesFromVault(char *pathToVault, char *vault, char *journalRegex, int
     // for readdir()
     debug("┌------------------------------\nDetected Files and dirs from the vault:");
     while ((vaultEntry = readdir(vaultDirectory)) != NULL) {
-
-      altDebug("%s ", vaultEntry->d_name);
+      char *entryName = vaultEntry->d_name;
+      int entryLenght = strlen(entryName);
+      altDebug("%s ", entryName);
       // for the regex code https://stackoverflow.com/a/1085120 
       regex_t regex;
       int regexReturn;
       // compiles the regex
       regexReturn = regcomp(&regex, journalRegex, 0);
-      if (vaultEntry->d_name[0] != '.') { // if the entry don't start with a dot (so hidden dirs and hidden files)
+      if (entryName[0] != '.') { // if the entry don't start with a dot (so hidden dirs and hidden files)
         char fullPathEntry[PATH_MAX]; // creates a string of size of the maximum path lenght
-        snprintf(fullPathEntry, sizeof(fullPathEntry), "%s/%s/%s", pathToVault, vault, vaultEntry->d_name); // sets the full absolute path to fullPathEntry
+        snprintf(fullPathEntry, sizeof(fullPathEntry), "%s/%s/%s", pathToVault, vault, entryName); // sets the full absolute path to fullPathEntry
         // check if it matches the regex. If it does not match regexReturn != 0.
-        regexReturn = regexec(&regex, vaultEntry->d_name, 0, NULL, 0);
+        regexReturn = regexec(&regex, entryName, 0, NULL, 0);
         struct stat metadataPathEntry;
-        if (stat(fullPathEntry, &metadataPathEntry) == 0 && regexReturn && S_ISREG(metadataPathEntry.st_mode)) { // if this entry is a file
+        if (stat(fullPathEntry, &metadataPathEntry) == 0 && entryName[entryLenght - 3] == '.' && entryName[entryLenght - 2] == 'm' && entryName[entryLenght - 1] == 'd' && regexReturn && S_ISREG(metadataPathEntry.st_mode)) { // if this entry is a file ending in .md and that does no match the regex
           notesArray = realloc(notesArray, (notesCount + 1)*sizeof(char*)); // resize notesArray so that
-          notesArray[notesCount] = strdup(vaultEntry->d_name); // copy the dir name into notesArray
+          notesArray[notesCount] = strdup(entryName); // copy the dir name into notesArray
           notesCount++;
           altDebug("did not match with the regex. It is a note.\n");
         } else if (!regexReturn) {altDebug("matched with the regex. It is a journal.\n");}
       } else {altDebug("was ignored\n");}
     }
     altDebug("└ ------------------------------\n");
-    // (TODO LATER) Alphabetically sort them
+
     // free's some used memory
     closedir(vaultDirectory);
     *count = notesCount; // passes the number of files
@@ -120,7 +121,6 @@ char **getVaultsFromDirectory(char *dirString, int *count, int shouldDebug) {
       }
     }
     altDebug("└------------------------------\n");
-    // (TODO LATER) Alphabetically sort them
 
     // free's some used memory
     closedir(vaultsDirectory);
@@ -160,19 +160,19 @@ char *updateJournal(char *path, char *journal, char *timeFormat, int shouldDebug
       // This time it will be different. We must add "invert" the extraOptions to the options so that the Create new entry in journal is on top
       entryArray = realloc(entryArray, sizeof(char*));*/
       // simpler to just malloc 2 and later realloc
-      const int extraOptions = 2; 
+      const int extraOptions = 3; 
       char **entryArray = malloc(extraOptions*sizeof(char*));
       char *createEntryMessage = malloc(PATH_MAX);
       snprintf(createEntryMessage, PATH_MAX, "Create new entry for the journal %s", journal);
       entryArray[0] = createEntryMessage;
       entryArray[1] = "Open random entry";
+      entryArray[2] = "Search inside entries";
       int entryCount = extraOptions; // we need to count how many dirs there is to always readjust how many memory we alloc
       // Refer https://pubs.opengroup.org/onlinepubs/7990989775/xsh/readdir.html
       // for readdir()
       debug("┌------------------------------\n Detected files and dirs from %s:", path);
       // iterates over all the entries from the dir
       while ((dividedJournalEntry = readdir(dividedJournalDirectory)) != NULL) {
-        // (TODO LATER) find a way to sort them
         altDebug("%s\n", dividedJournalEntry->d_name);
         if (dividedJournalEntry->d_name[0] != '.') { // if the entry don't start with a dot (so hidden dirs and hidden files)
           char fullPathEntry[PATH_MAX]; // creates a string of size of the maximum path lenght
@@ -220,7 +220,12 @@ char *updateJournal(char *path, char *journal, char *timeFormat, int shouldDebug
         snprintf(temp, PATH_MAX, "%s/%s", path, entryArray[randomEntry]); // reconstruct the path
         strncpy(path, temp, PATH_MAX);
         debug("Selected random entry %s. It's path is %s.", entryArray[randomEntry], path);
-                           //
+      } else if (strcmp(selectedOption, entryArray[2]) == 0) { // if we choosed to search
+        char *temp = fzfSelect(path, "Input text to be searched", shouldDebug); // uses ripgrep and fzf to search inside the files
+        char *selectedOption = malloc(PATH_MAX); // we can't just use path as both input and output of snprintf
+        snprintf(selectedOption, PATH_MAX, "%s/%s", path, temp);
+        path = strdup(selectedOption);
+        free(selectedOption);
       } else { // we just recreate the path to the selected entry
         // snprintf does not like to have the same variable as input and output so we use a buffer
         char temp[PATH_MAX];

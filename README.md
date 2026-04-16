@@ -6,7 +6,7 @@ Using my Neovim setup, I explored plugins like **[neorg](https://github.com/nvim
 The goal was a terminal-based interface for accessing vaults and notes using standard Markdown, with minimal extra features. Although it currently works only with Neovim, it is designed as a standalone wrapper that could be adapted for other editors with minimal changes.
 
 ### How to install
-1. Have installed `ncurses`, `cjson`, `make`, `Vivify`, `rsync` and `pkg-config`. <TODO LATER we should put hyprlinks to each program.>
+1. Have installed `ncurses`, `cjson`, `make`, `Vivify`, `rsync`, `pkg-config`, `sed`, `ripgrep` and `fzf`. <TODO LATER we should put hyprlinks to each program.>
 2. Have a supported editor: `vim`, `neovim` and `nano` (for the moment)
 3. Clone the repository and enter it.
 ```shell
@@ -102,7 +102,7 @@ Change `~/.config/notewrapper/config.json`. If it does not exist, the program sh
 - [x] Search for config.json in other directories such as ~/.config/notewrapper/ and not only this directory
 - [x] Port vivify.vim to nixpkgs
 - [ ] Add a way to have vaults in different directories
-- [ ] some kind of FZF search for notes
+- [x] some kind of FZF search for notes
 - [x] A button to randomly select a note or an entry in a journal
 - [x] Fix crash when the window is resized
 - [x] Actually open vivify when opening nvim

@@ -12,6 +12,9 @@
 #include <limits.h>
 #include <regex.h>
 #include "utils.h"
+#define CMD_BUFFER 4096 // for fzfSelect
+#define RESULT_BUFFER 1024 // for fzfSelect
+
 /*Uses ncurses to get an input from the user. 
 Creates a new note with this input. 
 also can create a journal if the name matches with journalRegex. 
@@ -24,6 +27,8 @@ Creates a new vault with this input.
 If vault already exists, prints a warning. 
 returns nothing. */
 void createNewVault(char *dirToVault, int bypass, char *bypassvalue, int debug);
+// uses fzf and ripgrep to search inside the files to choose between all the options.
+char* fzfSelect(char *pathToFiles, char *selectText, int shouldDebug);
 /*this function is used multiple times let the user select one options from many with ncurses in a TUI.
 options is the array of strings with all the options.
 optionsText is the text that will be printed at the top (For example: "Please select ...").

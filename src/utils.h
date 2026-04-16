@@ -33,7 +33,6 @@
 extern const char *supportedEditor[]; // array of supported editors
 extern const int numEditors; // number of supported editors
 
-//(TODO LATER) organise this mess
 
 //compares two strings alphabetically.
 //this function is used for qsort
