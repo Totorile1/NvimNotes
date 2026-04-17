@@ -25,18 +25,22 @@ void getCurrentTime(int *hour, int *minute, int *second) {
 
 void _debug(const int d, const char *file, const int line, const char *function, const char *message, ...) { // use for formatted debug
   if (d) {
+    fflush(stdout);
+    fflush(stderr);
     va_list args; //variadic function stuff
     va_start(args, message);
     int h, m, s;
     getCurrentTime(&h, &m, &s);
     fprintf(stderr, "\e[0;32m[DEBUG -- %d:%d:%d] From file %s line %d function %s:\e[0m\n", h, m, s, file, line, function);
     vfprintf(stderr, message, args);
-    printf("\e[0m\n");
+    fprintf(stderr, "\e[0m\n");
     va_end(args);
   }
 }
 void _altDebug(const int d, const char *message, ...) { // use for less formal debuggin. (usefull if enumerating or making a list
   if (d) {
+    fflush(stdout);
+    fflush(stderr);
     va_list args;
     va_start(args, message);
     vfprintf(stderr, message, args);
@@ -204,7 +208,7 @@ int doesEditorExist (char *editorToCheck, int shouldDebug) {     // Some exectua
     }
     char *path_env = getenv("PATH");
     error(!path_env, "program", "getenv(\"PATH\") failed to get your path. NoteWrapper is unable to check if your desired editor is installed\n");
-    debug("Your PATH is %s", path_env);
+    debug("Your PATH is %s\n", path_env);
     char *paths = strdup(path_env); // duplicate because strtok modifies the string
     char *dir = strtok(paths, ":");
     while (dir) {

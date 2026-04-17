@@ -112,7 +112,7 @@ Change `~/.config/notewrapper/config.json`. If it does not exist, the program sh
 - [x] Add flags for customization
 - [ ] Write a good README.md
 - [x] Option to not render and to only open nvim
-- [ ] Figure out this vivify issue https://github.com/jannis-baum/Vivify/issues/291
+- [x] Figure out this vivify issue https://github.com/jannis-baum/Vivify/issues/291
 - [ ] Port this to other editors
 - [x] Port to vim
 - [ ] Fixe all the small stuff marked //(TODO LATER) in the code

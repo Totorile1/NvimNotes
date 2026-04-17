@@ -96,7 +96,7 @@ char **getVaultsFromDirectory(char *dirString, int *count, int shouldDebug) {
     // (TODO LATER) it might be a good idea to check if these directories exist
     // (TODO LATER) expand ~ as it does not work with opendir()
     // this function is inputed a path to a directory (which comes usually from the config file) and outpus all the suitable directories (so not the hidden ones) which will serve as separate vaults for notes
-    debug("Opening %s", dirString);
+    debug("Opening %s ", dirString);
     // originally from https://www.geeksforgeeks.org/c/c-program-list-files-sub-directories-directory/
     struct dirent *vaultsDirectoryEntry;
     DIR *vaultsDirectory = opendir(dirString);
