@@ -1,5 +1,4 @@
 #include "ui.h"
-#include <stdio.h>
 
 void createNewVault(char *dirToVault, int bypass, char *bypassvalue, int shouldDebug) {
   int duplicateWarning = 0; // set to 1 later if the vault you tried to create already existed

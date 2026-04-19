@@ -1,4 +1,5 @@
 #include "utils.h"
+#include <stddef.h>
 
 const char *supportedEditor[] = {"neovim", "vim", "nano"};
 const int numEditors = 3;
@@ -292,11 +293,16 @@ void appendToFile(const char *path, const char *string, const int shouldDebug) {
 }
 
 void sanitize(char *string) {
-  for (size_t i = 0; i < strlen(string); i++) {
-    if ((!isalnum((unsigned char)string[i]) && strchr("/\\:*?\"\'<>\n\r\t", string[i])) || ((i == 0 || i == 1) && string[i] == '.')) { // replace unwanted chars by '_'. '.' is replaced if it is only the first two chars
-                                                                                                                    // (TODO LATER fixe case where it "*.*", "..." and so on
+  size_t stringLenght = strlen(string);
+  for (size_t i = 0; i < stringLenght; i++) {
+    if ((!isalnum((unsigned char)string[i]) && strchr("~/\\:*?\"\'|!$[]{}<>\n\r\t", string[i]))) { // replace unwanted chars by '_'
         string[i] = '_';
     }
+  }
+  // removes any leading '.
+  size_t i = 0;
+  while (i < stringLenght && string[i] == '.') {
+    string[i++] = '_';
   }
 }
 
@@ -304,15 +310,19 @@ void sanitize(char *string) {
 // from what i understood:
 // remove() can't delete directories with files
 // so it walks the file tree and deletes it's content before removing the directory
-// (TODO LATER) this seems safe, but it's maybe a good idea to add some checks to not remove something it should not remove
-int unlink_cb(const char *fpath, const struct stat *sb, int typeflag, struct FTW *ftwbuf) {
+int unlink_cb(const char *filePath, const struct stat *sb, int typeflag, struct FTW *ftwbuf) {
   (void)sb;
   (void)typeflag;
   (void)ftwbuf;
 
   int shouldDebug = 1; //normally shouldDebug should be passed to the function. However, it's to difficult here and the best it to set it to 1.
-  int rv = remove(fpath);
-  error(rv, "program", "remove() failed to delete %s", fpath);
+
+  // some sanity checks to be sure that we don't delete something we shouldn't
+  error(strcmp(filePath, "") == 0, "program", "filePath is empty. Refusing to delete directory");
+  error(filePath[0] == '.', "program", "%s starts with \".\". For security reasons, use absolute path and not relative path.", filePath);
+
+  int rv = remove(filePath);
+  error(rv, "program", "remove() failed to delete %s", filePath);
   return rv;
 }
 

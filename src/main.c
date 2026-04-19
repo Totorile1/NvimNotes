@@ -444,7 +444,7 @@ next_arg:
     error(!doesEditorExist(editorToOpen, shouldDebug), "user", "%s is either not in your path or not installed.", editorToOpen);
     debug("Finished parsing the attribute flags");
 
-    if (doesBackup) { // (TODO LATER) when implementing multiple directories for vault we should verifiy this works.
+    if (doesBackup) {
       handleBackups(notesDirectoryString, pathToBackup, homedir, interval, (const char**)rsyncArgs, rsyncArgsNumber, shouldDebug);
     }
     
@@ -568,11 +568,18 @@ open_note:
             int regexReturn = regcomp(&regex, journalRegex, 0);
             error(regexReturn, "program", "Regex compilation failed.");
             regexReturn = regexec(&regex, noteSelected, 0, NULL, 0);
+
+
+            int *journalWasUpdated = malloc(sizeof(int));
+            *journalWasUpdated = 0;
             if (!regexReturn) { // if the regex matches -> it's a journal
               debug("%s is a journal. Updating it...", noteSelected);
-              fullPath = updateJournal(fullPath, noteSelected, timeFormat, shouldDebug); // we return the path. As if it is a divided journal we must point to the correct entry
+              fullPath = updateJournal(fullPath, noteSelected, timeFormat, journalWasUpdated, shouldDebug); // we return the path. As if it is a divided journal we must point to the correct entry
             }
-            if (newLineOnOpening) {//(TODO LATER) For some reason this does not applies to journals? --- it does but only if we don't create a new file/entry
+            if (newLineOnOpening) {
+              if (*journalWasUpdated) {
+                appendToFile(fullPath, " \n", shouldDebug); // when updating the journal it adds a \n char at the end. So appendToFile(\n) does not work. We append a (special and rare) whitespace character + \n to bypass this issue.
+              }
               appendToFile(fullPath, "\n", shouldDebug);
             }
             openEditor(fullPath, editorToOpen, shouldRender, shouldJumpToEnd, shouldDebug);
@@ -586,8 +593,7 @@ note_creation:
             shouldChangeVault = 1;
           } else if (strcmp(noteSelected, "Delete vault") == 0) {
             const char *yesNo[] = {"No, go back to note selection.", "Yes."};
-            char *answer = ncursesSelect((char **)yesNo, "Are you sure you want to delete the entire vault? This can not be undone (Use arrows or WASD, Enter to select):", 1, 1, " ", "", "", shouldDebug); // (TODO LATER) This is ugly with Select Are you sure[...]
-            debug("You answered: %s for deleting the vault %s", answer, vaultSelected);
+            char *answer = ncursesSelect((char **)yesNo, "Are you sure you want to delete the entire vault? This can not be undone (Use arrows or WASD, Enter to select):", 1, 1, " ", "", "", shouldDebug);            debug("You answered: %s for deleting the vault %s", answer, vaultSelected);
             if (strcmp(answer, "Yes.") == 0) {
               // delete the vault after confirmation by the user
               char pathToRMRF[PATH_MAX];

@@ -1,6 +1,5 @@
 #include "notes.h"
 #include "ui.h"
-#include <stdio.h>
 
 char **getJournalsFromVault(char *pathToVault, char *vault, char *journalRegex,  int *count, int shouldDebug) {
     debug("Searching %s for journals", vault);
@@ -25,7 +24,6 @@ char **getJournalsFromVault(char *pathToVault, char *vault, char *journalRegex, 
     debug("┌------------------------------------------\nDetected files and dirs from the vault");
     while ((vaultEntry = readdir(vaultDirectory)) != NULL) { // we iterate over every entry from the dir. So files and dirs (. and .. included)
       altDebug("%s  ", vaultEntry->d_name);
-      // (TODO LATER) check if it is a file or a dir
       if (vaultEntry->d_name[0] != '.') { // if the entry don't start with a dot (so hidden dirs and hidden files)
         regexReturn = regexec(&regex, vaultEntry->d_name, 0, NULL, 0);
         if (!regexReturn) { // if the regex matches
@@ -51,7 +49,7 @@ char** getNotesFromVault(char *pathToVault, char *vault, char *journalRegex, int
     // this function is inputed a path to a vault (which was selected before) and outpus all the suitable notes (so not the hidden ones)
     // originally from https://www.geeksforgeeks.org/c/c-program-list-files-sub-directories-directory/
     debug("Searching %s for notes", vault);
-    struct dirent *vaultEntry; // (TODO LATER) change name of these variables. notesDirectory is dumb as it is the directory of vaults
+    struct dirent *vaultEntry; 
     char tempPath[PATH_MAX];
     snprintf(tempPath, sizeof(tempPath), "%s/%s", pathToVault, vault); // sets the full absolute path to fullPathEntry
     DIR *vaultDirectory = opendir(tempPath);
@@ -93,8 +91,6 @@ char** getNotesFromVault(char *pathToVault, char *vault, char *journalRegex, int
 }
 
 char **getVaultsFromDirectory(char *dirString, int *count, int shouldDebug) { 
-    // (TODO LATER) it might be a good idea to check if these directories exist
-    // (TODO LATER) expand ~ as it does not work with opendir()
     // this function is inputed a path to a directory (which comes usually from the config file) and outpus all the suitable directories (so not the hidden ones) which will serve as separate vaults for notes
     debug("Opening %s ", dirString);
     // originally from https://www.geeksforgeeks.org/c/c-program-list-files-sub-directories-directory/
@@ -128,7 +124,7 @@ char **getVaultsFromDirectory(char *dirString, int *count, int shouldDebug) {
     return dirsArray;
 }
 
-char *updateJournal(char *path, char *journal, char *timeFormat, int shouldDebug) {
+char *updateJournal(char *path, char *journal, char *timeFormat, int *journalWasUpdated, int shouldDebug) {
   path[PATH_MAX] = '\0'; // it assures it is a string (Most cases this does nothing). But rewriting at least one bytes make the compile happy. He doesn't want to return an unchanged input.
   debug("Handling the journal %s", path);
 
@@ -144,6 +140,7 @@ char *updateJournal(char *path, char *journal, char *timeFormat, int shouldDebug
     debug("%s is a unified journal.", path);
     if (!isStringInFile(path, date, shouldDebug)) { // if there is no entry for current date
       appendToFile(path, date, shouldDebug);
+      *journalWasUpdated = 1;
     } // if there is an entry do nothing 
   } else if (S_ISDIR(metadata.st_mode)) {
       debug("%s is a divided journal.", path);
@@ -207,6 +204,7 @@ char *updateJournal(char *path, char *journal, char *timeFormat, int shouldDebug
           fprintf(file, "%s\n", date);
           fclose(file);
           free(createEntryMessage);
+          *journalWasUpdated = 1;
         } else {
           debug("Today's entry (%s) already exist. We won't create a new one.", dateWithExtension);
         }

@@ -13,9 +13,10 @@ char **getNotesFromVault(char *pathToVault, char *vault, char *journalRegex, int
 char **getVaultsFromDirectory(char *dirString, int *count, int shouldDebug);
 // path is the path to the file.
 // journal is the name of the file.
+// journalWasUpdated will be set to 1 if a new entry was created
 // handles both type of journal (divided and unified).
 // creates new entry with date.
 // for divided select if we want to acces to a new entry or a old one.
 // returns the path to the file that needs to be opened.
-char *updateJournal(char *path, char *journal, char *timeFormat, int shouldDebug);
+char *updateJournal(char *path, char *journal, char *timeFormat, int *journalWasUpdated, int shouldDebug);
 #endif
