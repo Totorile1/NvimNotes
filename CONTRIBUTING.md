@@ -8,7 +8,7 @@ This project aims to remain minimal, terminal-focused, and easy to extend. Contr
 
 ## Debugging and error handling
 
-Please use the standardized debugging and error-handling functions:
+Please use the standardized debugging and error-handling functions defined in [/src/utils.c](./src/utils.c):
 
 * `debug(...)`
   Used for formatted debugging output (printf-style formatting).
@@ -17,7 +17,7 @@ Please use the standardized debugging and error-handling functions:
   A lighter version of `debug()` when full formatting is not required.
 
 * `error(condition, "user" | "program", "error message", ...)`
-  Standard error reporting function:
+  Standard error reporting function (printf-style formatting):
 
   * `"user"`: errors caused by user input or configuration
   * `"program"`: internal or unexpected program errors
