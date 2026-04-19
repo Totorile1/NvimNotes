@@ -93,6 +93,11 @@ Change `~/.config/notewrapper/config.json`. If it does not exist, the program sh
 `backup.interval` can either be `daily`, `weekly`, `monthly` or an integer. It specifies the interval between two backups.
 `rsyncArgs` are the array of arguments that will be passed into rsync. See `man rsync` or `rsync --help`.
 
+#### Vivify's Configuration
+
+Some settings must be set in Vivify's configuration file. See [documentation](https://github.com/jannis-baum/Vivify/blob/main/docs/customization.md).
+
+I recommend changing the browser settings to a browser different to your main browser.
 
 ### What needs to be done (a lot)
 - [x] Add a way to create vaults
