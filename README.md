@@ -200,4 +200,5 @@ It is recommended to use a browser different from your main one for rendering.
 
 * [ ] A converter between journal types
 * [ ] Support multiple vault directories
-* [ ] Port NoteWrapper to other editors
+* [ ] Port NoteWrapper to other editors (non-exhaustive list of planned ports: `helix`, `emacs -nw`, `micro`, `jed`, kakoune, `ad`, flow-control, `ee`, `amp`, `dte`, `cano`, `mle`, `zee`, `ptext`, `kibi`, `ox`, `ne`, `nvi`, `dit`, `zile`, `moe`, `joe`)
+* [ ] Default to $EDITOR
