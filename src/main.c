@@ -221,11 +221,14 @@ arg_next:
       cJSON *rsyncArgsJSON = cJSON_GetObjectItem(backupJSON, "rsyncArgs");
       if (rsyncArgsJSON && cJSON_IsArray(rsyncArgsJSON)) { // if it is what we expected
         rsyncArgsNumber = cJSON_GetArraySize(rsyncArgsJSON);
+        debug("In %s, rsyncArgsNumber is calculated to %d.", configPath, rsyncArgsNumber);
         rsyncArgs = realloc(rsyncArgs, (size_t)rsyncArgsNumber);
+        debug("In %c, rsyncArgs are:", configPath);
         for (int i = 0; i < rsyncArgsNumber; i++) {
           cJSON *argJSON = cJSON_GetArrayItem(rsyncArgsJSON, i);
           if (argJSON && cJSON_IsString(argJSON)) {
-              rsyncArgs[i] = cJSON_GetStringValue(argJSON);
+              rsyncArgs[i] = strdup(cJSON_GetStringValue(argJSON));
+              altDebug("%s\n", rsyncArgs[i]);
           } else {error(1, "user", "One element in rsyncArgs array in %s is not a string", configPath);}
         }
       } else {error(1, "user", "%s did not contained a rsyncArgs array inside the backup section or the value is from an unexpected type", configPath);}
