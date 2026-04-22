@@ -73,6 +73,7 @@ void _error(const int shouldDebug, const int condition, const char *type, const 
 
 static void copyDir(const char *source, const char *destination, const char **rsyncArgs, const int rsyncArgsNumber, const int shouldDebug) {
     debug("Backuping... source: %s and destination: %s", source, destination);
+    debug("Rsync has %d extra arguments", rsyncArgsNumber);
     pid_t pid = fork();
     
     error(pid < 0, "program", "fork() faild. pid = %d", pid);
@@ -87,6 +88,11 @@ static void copyDir(const char *source, const char *destination, const char **rs
             args[i+2] = (char*)source;
             args[i+3] = (char*)destination;
             args[i+4] = NULL; // execvp expect last arg to be NULL
+            debug("rsync command:");
+            for (int k = 0; k <= i+4; k++) {
+              altDebug("%s ", args[k]);
+            }
+            altDebug("\n");
           }
         }
         execvp("rsync", args);
