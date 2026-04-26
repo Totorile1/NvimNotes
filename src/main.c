@@ -120,7 +120,7 @@ arg_next:
           tempUnFixedName++; // shifts and removes the ~
           directoriesArray[i] = malloc(PATH_MAX);
           debug("~ in %s was expanded to %s", tempUnFixedName, homedir);
-          snprintf(directoriesArray[i], PATH_MAX, "%s/%s", homedir, tempUnFixedName);
+          snprintf(directoriesArray[i], PATH_MAX, "%s%s", homedir, tempUnFixedName);
         } else {
           directoriesArray[i] = strdup(cJSON_GetStringValue(tempEntry));
           altDebug("%s\n",directoriesArray[i]);
