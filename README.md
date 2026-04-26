@@ -171,7 +171,10 @@ Edit `~/.config/notewrapper/config.json`. If it does not exist, it will be creat
   "newLineOnOpening": true,
   "backup": {
     "enable": false,
-    "directory": "/path/to/backup",
+    "directory": {
+        "~/Documents/Notes": "path/to/backup1",
+        "/other/paths/": "path/to/backup2"
+    },
     "interval": "weekly",
     "rsyncArgs": ["-Lqah", "--update"]
   }
@@ -188,7 +191,7 @@ Edit `~/.config/notewrapper/config.json`. If it does not exist, it will be creat
 * `dateEntry`: format for journal entries (see `strftime`)
 * `newLineOnOpening`: add a newline when opening a note
 * `backup.enable`: enable automatic backups using `rsync`
-* `backup.directory`: destination directory for backups
+* `backup.directory`: backup's destination for each directory
 * `backup.interval`: backup frequency (`daily`, `weekly`, `monthly`, or integer)
 * `backup.rsyncArgs`: arguments passed to `rsync`
 
