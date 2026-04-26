@@ -37,7 +37,7 @@ Format:
 Examples:
 
 * `Editor (#1): add support for Microsoft Word`
-* `README.md: fix typos`
+* `docs: fix typos in README.md`
 * `Journal: improve entry parsing logic`
 
 Keep commit messages short and descriptive.
