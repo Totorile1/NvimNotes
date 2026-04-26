@@ -1,9 +1,12 @@
 #include "ui.h"
+#include "utils.h"
 
-void createNewVault(char *dirToVault, int bypass, char *bypassvalue, int shouldDebug) {
+void createNewVault(char **directoriesArray, int directoryCount, char **vaultsArray, int vaultCount, int bypass, char *bypassvalue, int shouldDebug) {
   int duplicateWarning = 0; // set to 1 later if the vault you tried to create already existed
   int emptyWarning = 0; // set to 1 later if inpted empty name
 input_screen:
+  // choose in which directory the vault will be created
+  char *dirToVault = ncursesSelect(directoriesArray, "Select a directory, in which the vault will remain (Use arrows or WASD, Enter to select)", directoryCount, 0, "", "", " ", shouldDebug);
   char *vaultName = malloc(PATH_MAX);
   if (!bypass) { // if won't bypass (if -v or --vault weren't set)
     echo();
@@ -48,13 +51,13 @@ input_screen:
   sanitize(vaultName);
   debug("Sanitized vaultName=%s", vaultName);
 
-  struct stat st = {0}; // https://stackoverflow.com/a/7430262
-  char vaultFullPath[PATH_MAX];
-  sprintf(vaultFullPath, "%s/%s/", dirToVault, vaultName);
-  if (stat(vaultFullPath, &st) == -1) {
+  
+  if (!isStringInArray(vaultName, (const char**)vaultsArray, vaultCount)) { // if vault doesnt already exists. We avoid vaults with the same name even if they are from different directories.
+    char vaultFullPath[PATH_MAX]; // recreating the full path
+    sprintf(vaultFullPath, "%s/%s/", dirToVault, vaultName);
+
     mkdir(vaultFullPath, 0744);
   } else {
-    // if stat(...) != -1 it means the vault already exist. We will go back to the input screen with a new message.
     duplicateWarning = 1;
     goto input_screen;
   }
@@ -109,7 +112,7 @@ char *createNewNote(char dirToVault[PATH_MAX], char *vaultFromDir, int bypass, c
       snprintf(fileFullPath, PATH_MAX, "%s/%s/%s/", dirToVault, vaultFromDir, fileName);
       struct stat st = {0};
       if (stat(fileFullPath, &st) == -1) {
-        error(!mkdir(fileFullPath, 0744), "program", "mkdir failed");
+        error(mkdir(fileFullPath, 0744), "program", "mkdir failed");
       } else {
         error(1, "program", "%s could not be created", fileFullPath);
       }
@@ -260,7 +263,7 @@ char* fzfSelect(char *pathToFiles, char *selectText, int shouldDebug) {
     return result;
 }
 
-char* ncursesSelect(char **options, char *optionsText, int optionsNumber, int extraOptionsNumber, char *bottomText, char *middleText, char *topText, int shouldDebug) {
+char* ncursesSelect(char **options, char *optionsText, int optionsNumber, int extraOptionsNumber, char *bottomText, char *middleText, char *topText, int shouldDebug) { // TODO we should see how it handles larges strings (like large directories)
     int highlight = 0; //curently highlighted option
     int key;
 

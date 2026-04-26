@@ -1,5 +1,30 @@
 #include "notes.h"
-#include "ui.h"
+#include "utils.h"
+
+char *getDirectoryFromVault(char *targetVault, char **vaultsArray, int vaultTotalNumber, int *vaultNumberPerDirectory, char **directoryArray, int directoryNumber, int shouldDebug) {
+  debug("Searching the vault %s inside all the directories...", targetVault);
+  debug("Here are how many vaults there is per directory:");
+  for (int i = 0; i < directoryNumber; i++) {
+    altDebug("%d for %s\n", vaultNumberPerDirectory[i], directoryArray[i]);
+  }
+  debug("Here are all the vaults in the order they will be searched:");
+  for (int i = 0; i < vaultTotalNumber; i++) {
+    altDebug("%s\n", vaultsArray[i]);
+  }
+  int index = 0;
+
+  for (int i = 0; i < directoryNumber; i++) {
+      for (int j = 0; j < vaultNumberPerDirectory[i]; j++) {
+          if (strcmp(vaultsArray[index], targetVault) == 0) {
+              debug("%s found in %s. (index %d)", targetVault, directoryArray[i], index);
+              return directoryArray[i];
+          }
+          index++;
+      }
+  }
+  error(1, "program", "the vault %s was not found", targetVault);
+  return "this makes the compiler and clangd happy. Who doesn't want GCC and clangd to be happy? Such person would be a terrible monster... One must imagine GCC and clangd happy.";
+}
 
 char **getJournalsFromVault(char *pathToVault, char *vault, char *journalRegex,  int *count, int shouldDebug) {
     debug("Searching %s for journals", vault);
@@ -90,38 +115,56 @@ char** getNotesFromVault(char *pathToVault, char *vault, char *journalRegex, int
     return notesArray;
 }
 
-char **getVaultsFromDirectory(char *dirString, int *count, int shouldDebug) { 
-    // this function is inputed a path to a directory (which comes usually from the config file) and outpus all the suitable directories (so not the hidden ones) which will serve as separate vaults for notes
-    debug("Opening %s ", dirString);
+char **getVaultsFromDirectories(char **directoryStringArray, int directoryNumber, int *vaultsPerDirectoryNumber,  int *count, int shouldDebug) {
+  // to avoid having to work with a tree-dimensional array. We will use a 2d and vaultsPerDirectoryNumber will indicate the width of the directories.
+  char **vaultsArray = NULL;
+  int nthVault = 0; // this is only used internally to set the string into the right place in directoryStringArray.
+  int previousStartIndex = 0;
+  for (int i = 0; i < directoryNumber; i++) {
+    debug("Opening %s", directoryStringArray[i]);
     // originally from https://www.geeksforgeeks.org/c/c-program-list-files-sub-directories-directory/
     struct dirent *vaultsDirectoryEntry;
-    DIR *vaultsDirectory = opendir(dirString);
-    error(vaultsDirectory==NULL, "program", "Could not open directory %s", dirString);
-    char **dirsArray = NULL; // will contain all the dirs/vaults
-    int dirsCount = 0; // we need to count how many dirs there is to always readjust how many memory we alloc
+    DIR *vaultsDirectory = opendir(directoryStringArray[i]);
+    error(!vaultsDirectory, "program", "Could not open directory %s", directoryStringArray[i]);
+    vaultsPerDirectoryNumber[i] = 0;
+    debug("┌------------------------------\n Detected files and dirs %s:", directoryStringArray[i]);
     // Refer https://pubs.opengroup.org/onlinepubs/7990989775/xsh/readdir.html
     // for readdir()
-    debug("┌------------------------------\n Detected files and dirs from the directory:");
-    while ((vaultsDirectoryEntry = readdir(vaultsDirectory)) != NULL) {
-      altDebug("%s\n", vaultsDirectoryEntry->d_name);
-      if (vaultsDirectoryEntry->d_name[0] != '.') { // if the entry don't start with a dot (so hidden dirs and hidden files)
-        char fullPathEntry[PATH_MAX]; // creates a string of size of the maximum path lenght
-        snprintf(fullPathEntry, sizeof(fullPathEntry), "%s/%s", dirString, vaultsDirectoryEntry->d_name); // sets the full absolute path to fullPathEntry
-        
-        struct stat metadataPathEntry;
-        if (stat(fullPathEntry, &metadataPathEntry) == 0 && S_ISDIR(metadataPathEntry.st_mode)) { // if this entry is a directory
-          dirsArray = realloc(dirsArray, (dirsCount + 1)*sizeof(char*)); // resize dirsArray so that
-          dirsArray[dirsCount] = strdup(vaultsDirectoryEntry->d_name); // copy the dir name into dirsArray
-          dirsCount++;
+    while((vaultsDirectoryEntry = readdir(vaultsDirectory)) != NULL) {
+      char *entryName = vaultsDirectoryEntry->d_name; // gets the entry as a string value
+      altDebug("%s", entryName);
+      if (entryName[0] != '.') { // if not hidden file/dir
+        char tempFullEntryPath[PATH_MAX]; // we recreate the full path to check it's proprieties
+        snprintf(tempFullEntryPath, PATH_MAX, "%s%s", directoryStringArray[i], entryName);
+        altDebug(" (%s)", tempFullEntryPath);
+        //checking the metadata to see if it is a dir
+        struct stat metadataEntry;
+        if (stat(tempFullEntryPath, &metadataEntry) == 0 && S_ISDIR(metadataEntry.st_mode)) { // get's the metadata (stat should return 0 if fails) and sees if it is a dir.
+          altDebug(" is a vault\n");
+          vaultsArray = realloc(vaultsArray, sizeof(char *)*(nthVault + 1)); // resize vaultsArray
+          error(vaultsArray == NULL, "program", "realloc failed");
+          vaultsPerDirectoryNumber[i]++; // it will be used later to know which vaults goes into which directory
+          vaultsArray[nthVault] = strdup(entryName); // we use strdup and not strcpy, because memory used with opendir and readdir will be closed.
+          error(vaultsArray[nthVault] == NULL, "program", "strdup failed");
+          nthVault++; // it is used immediatly to set the vault into directoryStringArray
+        } else {
+          altDebug(" is not a vault (not a dir.)\n");
         }
+      } else {
+        altDebug(" is not a vault (hidden file/dir)\n");
       }
     }
-    altDebug("└------------------------------\n");
-
-    // free's some used memory
+    // we sort entries for the same vault. We can't sort them all. This would break the order.
+    qsort(vaultsArray + previousStartIndex, nthVault - previousStartIndex, sizeof(const char *), compareString); // sorts the vaults alphabetically
     closedir(vaultsDirectory);
-    *count = dirsCount;
-    return dirsArray;
+    previousStartIndex = nthVault;
+  }
+  // we calculate once the total number of vaults to avoid recalculation every time we use it
+  *count = 0;
+  for (int i = 0; i < directoryNumber; i++) {
+    *count += vaultsPerDirectoryNumber[i];
+  }
+  return vaultsArray;
 }
 
 char *updateJournal(char *path, char *journal, char *timeFormat, int *journalWasUpdated, int shouldDebug) {
@@ -135,7 +178,7 @@ char *updateJournal(char *path, char *journal, char *timeFormat, int *journalWas
   sanitize(dateWithExtension);
   debug("Sanitized date: %s\n(it might be used later for a file name if the journal is divided)", dateWithExtension);
   struct stat metadata;
-  error(stat(path, &metadata), "program", "stat() failed to get information about %s", path);
+  stat(path, &metadata);
   if (S_ISREG(metadata.st_mode)) {
     debug("%s is a unified journal.", path);
     if (!isStringInFile(path, date, shouldDebug)) { // if there is no entry for current date

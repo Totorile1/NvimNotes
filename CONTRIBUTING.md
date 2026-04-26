@@ -37,7 +37,7 @@ Format:
 Examples:
 
 * `Editor (#1): add support for Microsoft Word`
-* `README.md: fix typos`
+* `docs: fix typos in README.md`
 * `Journal: improve entry parsing logic`
 
 Keep commit messages short and descriptive.
@@ -64,6 +64,15 @@ To add support for a new editor, you must update both documentation and source c
 
   * If the editor supports a Vivify plugin integration, follow the pattern used for **(neo)vim**
   * If it does not support integration, NoteWrapper must launch Vivify separately (see implementation used for **nano**)
+
+---
+
+## Changing default configuration
+
+If you want to change the default configuration or add a new option:
+1. Update [README's documentation](./README.md#configuration)
+2. In `./src/utils.c`, update the function `initAppFilesAndDirs()` which creates a default configuration if `~/.config/notewrapper/config.json` or if neither `-c` nor `--config` is set.
+3. In `./src/main.c` where the JSON is parsed, add the parsing logic. Do not forget the debugging information, errors when wrong type or when an important field is missing and add a default value if a less important field is missing.
 
 ---
 

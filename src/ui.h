@@ -22,11 +22,13 @@ returns the path to the note.
 If you want to bypass the input TUI set bypass to 1 and bypassvalue to the note name
 */
 char *createNewNote(char dirToVault[PATH_MAX], char *vaultFromDir, int bypass, char *bypassvalue, char *journalRegex, int debug);
-/*Uses ncurses to get an input from the user. 
+/*
+Chooses in which directory it want to create the vault.
+Uses ncurses to get an input from the user. 
 Creates a new vault with this input. 
 If vault already exists, prints a warning. 
 returns nothing. */
-void createNewVault(char *dirToVault, int bypass, char *bypassvalue, int debug);
+void createNewVault(char **directoriesArray, int directoryCount, char **vaultsArray, int vaultCount, int bypass, char *bypassvalue, int debug);
 // uses fzf and ripgrep to search inside the files to choose between all the options.
 char* fzfSelect(char *pathToFiles, char *selectText, int shouldDebug);
 /*this function is used multiple times let the user select one options from many with ncurses in a TUI.

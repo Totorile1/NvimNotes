@@ -136,9 +136,9 @@ void initAppFilesAndDirs(const char *home, const int shouldDebug) {
     debug("Creating default config file.");
     FILE *w = fopen(config_file, "w");
     error(!w, "program", "fopen failed opening %s");
-    fprintf(w,
+    fprintf(w, //TODO CHANGE default json
 "{\n"
-"  \"directory\": \"~/Documents/Notes/\",\n"
+"  \"directory\": [\"~/Documents/Notes/\"],\n"
 "  \"render\": true,\n"
 "  \"jumpToEndOfFileOnLaunch\": true,\n"
 "  \"editor\": \"neovim\",\n"
@@ -156,7 +156,7 @@ void initAppFilesAndDirs(const char *home, const int shouldDebug) {
     fclose(w);
 }
 
-void handleBackups(const char *pathOfVaults, const char *pathOfBackup, const char *homeDir, const int interval, const char **rsyncArguments, const int rsyncArgumentsNumber, const int shouldDebug) {
+void handleBackups(char **sourceDirectoryArray, const int sourceNumber, char **destinationDirectoryArray, const char *homeDir, const int interval, const char **rsyncArguments, const int rsyncArgumentsNumber, const int shouldDebug) {
     int shouldBackup = 0;
     time_t now = time(NULL);
     debug("Time since epoch is %ld", (long)now);
@@ -202,7 +202,11 @@ void handleBackups(const char *pathOfVaults, const char *pathOfBackup, const cha
     }
 
     if (shouldBackup) {
-        copyDir(pathOfVaults, pathOfBackup, rsyncArguments, rsyncArgumentsNumber, shouldDebug);
+      for (int i = 0; i < sourceNumber; i++) {
+        if (destinationDirectoryArray[i]) { // if we don't want to backup it, it was set to NULL
+          copyDir(sourceDirectoryArray[i], destinationDirectoryArray[i], rsyncArguments, rsyncArgumentsNumber, shouldDebug);
+        }
+      }
     }
 }
 

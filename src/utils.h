@@ -82,6 +82,8 @@ int openEditor(char *path, char *editor, int render, int shouldJumpToEndOfFile, 
 char *getFormatedTime(char *format, int shouldDebug);
 /* Caclulates if we need to do another backup (by reading ~/.cache/NoteWrapper/backupTime.txt.
 If need launches in the background rsync to do the backuping.
+Each pair of source/destination will launch one rsync process.
+If a pair don't need to be backed up, the destination should be set to NULL.
 rsyncArgs is the array of arguments to be passed to rsync. Do not inclue destination or source. It will be added in the function.*/
-void handleBackups(const char *pathOfVaults, const char *pathOfBackup, const char *homeDir, const int interval, const char **rsyncArgs, const int rsyncArgsNumber,  const int shouldDebug);
+void handleBackups(char **sourceDirectoryArray, const int sourceDirectoryNumber,  char **destinationDirectoryArray, const char *homeDir, const int interval, const char **rsyncArgs, const int rsyncArgsNumber,  const int shouldDebug);
 #endif

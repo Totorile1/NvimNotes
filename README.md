@@ -102,7 +102,6 @@ As a NixOS user, I will likely package it for **nixpkgs** in the future if the p
 Usage: notewrapper [options]
 Options:
   -c, --config <path/to/config>               Specify the config file.
-  -d, --directory <path/to/directory>         Specify the vaults' directory.
   -h, --help                                  Display this message.
   -e, --editor                                Specify the editor to open.
   -j, --jump                                  Jump to the end of the file on opening.
@@ -163,7 +162,7 @@ Edit `~/.config/notewrapper/config.json`. If it does not exist, it will be creat
 
 ```json
 {
-  "directory": "~/Documents/Notes/",
+  "directory": ["~/Documents/Notes/", "/other/paths/"],
   "render": true,
   "jumpToEndOfFileOnLaunch": true,
   "editor": "neovim",
@@ -181,7 +180,7 @@ Edit `~/.config/notewrapper/config.json`. If it does not exist, it will be creat
 
 ### Fields
 
-* `directory`: root directory containing all vaults
+* `directory`: Array of directories containing the vaults.
 * `render`: enable/disable Vivify rendering
 * `jumpToEndOfFileOnLaunch`: move cursor to end of file on open
 * `editor`: selected editor (must be supported). If not set, it defaults to `$EDITOR`.
@@ -207,6 +206,6 @@ It is recommended to use a browser different from your main one for rendering.
 ## Planned features
 
 * [ ] A converter between journal types
-* [ ] Support multiple vault directories
+* [x] Support multiple vault directories
 * [ ] Port NoteWrapper to other editors (non-exhaustive list of planned ports: `emacs -nw`, `jed`, `ad`, flow-control, `ee`, `amp`, `dte`, `cano`, `mle`, `zee`, `ptext`, `kibi`, `ox`, `ne`, `dit`, `zile`, `moe`, `joe`, `pico`, `vis`)
 * [x] Default to $EDITOR
