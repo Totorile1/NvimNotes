@@ -1,9 +1,6 @@
-#include "cjson/cJSON.h"
 #include "ui.h"
 #include "utils.h"
 #include "notes.h"
-#include <errno.h>
-#include <stdio.h>
 
 int main(int argc, char *argv[]) {
     int shouldDebug = 0;
@@ -205,6 +202,7 @@ arg_next:
         doesBackup = cJSON_IsTrue(doesBackupJSON) ? 1 : 0;
         debug("doesBackup is set to %d", doesBackup);
         if (!doesBackup) {
+          debug("a backup is not needed. Skipping parsing the rest of the json");
           goto backup_config_end; // easier to just go to rather than do a big if statement
         }
 
@@ -212,15 +210,33 @@ arg_next:
         cJSON *pathToBackupJSON = cJSON_GetObjectItem(backupJSON, "directory");
         debug("%s", cJSON_Print(pathToBackupJSON));
         error(pathToBackupJSON == NULL && !(cJSON_IsObject(pathToBackupJSON) || cJSON_IsArray(pathToBackupJSON) || cJSON_IsString(pathToBackupJSON) || cJSON_IsNumber(pathToBackupJSON) || cJSON_IsBool(pathToBackupJSON)), "user", "In %s, incorrect type for \"directory\". It must be a JSON object.", configPath); // for some reason cJSON_IsObject does not work. So we must do it like this.
-        for (int i = 0; i < numDirectories; i++) { // we iterate over every 
-          cJSON *pathToBackupForIthDirectoryJSON = cJSON_GetObjectItem(pathToBackupJSON, directoriesArray[i]);
-          if (pathToBackupForIthDirectoryJSON) {
-            backupDirectoriesArray[i] = strdup(cJSON_GetStringValue(pathToBackupForIthDirectoryJSON));
-          } else { // else no path is set. So we won't backup it.
+        
+        // we can't just iterate over directoriesArray as we replaced ~ to $HOME
+        // we must iterate over the json entries
+        cJSON *directoryEntry = NULL;
+        int i = 0;
+        cJSON_ArrayForEach(directoryEntry, dirJson) { // iterate over all the elements of the array _i. e._ over all the dirs
+          // we don't need to type error handle as we did it before
+          char *directoryEntryPath = cJSON_GetStringValue(directoryEntry);
+          cJSON *pathToBackupForIthDirectoryJSON = cJSON_GetObjectItem(pathToBackupJSON, directoryEntryPath);
+          if (pathToBackupForIthDirectoryJSON) { // if the entry exist
+            char *textPath = cJSON_GetStringValue(pathToBackupForIthDirectoryJSON);
+            if (textPath[0] == '~') {
+              textPath++; //cuts the ~
+              backupDirectoriesArray[i] = malloc(PATH_MAX);
+              error(backupDirectoriesArray[i] == NULL, "program", "malloc failed");
+              snprintf(backupDirectoriesArray[i], PATH_MAX, "%s%s", homedir, textPath);
+            } else {
+              backupDirectoriesArray[i] = strdup(textPath);
+            }
+            debug("%s will be backed up to %s", directoriesArray[i], backupDirectoriesArray[i]);
+          } else { // we set it to NULL to be sure we won't backup it
             backupDirectoriesArray[i] = NULL;
+            debug("%s won't be backed up", directoriesArray[i]);
           }
+          i++;
         }
-
+        
         // handles the interval of backup
         cJSON *intervalJSON = cJSON_GetObjectItem(backupJSON, "interval");
         if (intervalJSON && cJSON_IsString(intervalJSON)) {
@@ -459,6 +475,7 @@ next_arg:
     isEditorValid(editorToOpen, defaultEditor, shouldDebug); // check if editor is supported and if it is installed. If not, it will throw an error.
 
     if (doesBackup) {
+      debug("Handling backup");
       handleBackups(directoriesArray, numDirectories, backupDirectoriesArray, homedir, interval, (const char**)rsyncArgs, rsyncArgsNumber, shouldDebug);
     }
     

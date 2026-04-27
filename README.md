@@ -195,6 +195,15 @@ Edit `~/.config/notewrapper/config.json`. If it does not exist, it will be creat
 * `backup.interval`: backup frequency (`daily`, `weekly`, `monthly`, or integer)
 * `backup.rsyncArgs`: arguments passed to `rsync`
 
+Note: 
+* Directories must end with `/`.
+* Elements of `directory` and `backup.directory` must match exactly.  
+* Directories set in `directory` but not in `backup.directory` won't be backed up.
+* Directories set in `backup.directory` but not in `directory` will be ignored.
+* `journalRegex` must match if the file name ends with `.md` and if it doesn't.
+* It is recommended to keep `-q` or `--quiet` flag in `rsyncArgs` to avoid interference with `ncurses`.
+* If `rsync` fails, you will see it inside `ncurses`.
+
 ---
 
 ## Vivify configuration
