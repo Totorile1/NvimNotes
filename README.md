@@ -21,7 +21,7 @@ The goal was to create a terminal-based interface for accessing vaults and notes
 * Standard Markdown files (no custom format)
 * Journal support with flexible entry formats
 * Real-time Markdown rendering via Vivify
-* Backup support using `rsync`
+* Backup different directories into different destinations
 * Supports multiple editors
 
 ---
@@ -145,14 +145,14 @@ If your editor does not support these features, you can implement a plugin using
 
 | Editor    | Bufferless  | Cursor  | Jump to end  | Aditional requirements                                   |
 | --------- | ----------- | ------- | ------------ | ---------------------------------------------------------|
-| Helix     | ❌          | ❌      | ✅           | —                                                        |
-| Jed       | ❌          | ❌      | ✅           | —                                                        |
-| Kakoune   | ❌          | ❌      | ✅           | —                                                        |
-| Micro     | ❌          | ✅      | ✅           | [micro-vivify](https://codeberg.org/gibbert/micro-vivify) and [modifications to your `init.lua`](./docs/micro.md)|
-| Nano      | ❌          | ❌      | ✅           | —                                                        |
-| Neovim    | ✅          | ✅      | ✅           | [vivify-vim](https://github.com/jannis-baum/vivify.vim)  |
-| Vi        | ❌          | ❌      | ✅           |                                                          |
-| Vim       | ✅          | ✅      | ✅           | [vivify-vim](https://github.com/jannis-baum/vivify.vim)  |
+| [Helix](https://helix-editor.com/)     | ❌          | ❌      | ✅           | —                                                        |
+| [Jed](https://www.jedsoft.org/jed/)       | ❌          | ❌      | ✅           | —                                                        |
+| [Kakoune](http://kakoune.org/)   | ❌          | ❌      | ✅           | —                                                        |
+| [Micro](https://micro-editor.github.io/)     | ❌          | ✅      | ✅           | [micro-vivify](https://codeberg.org/gibbert/micro-vivify) and [modifications to your `init.lua`](./docs/micro.md)|
+| [Nano](https://www.nano-editor.org/)      | ❌          | ❌      | ✅           | —                                                        |
+| [Neovim](https://neovim.io/)    | ✅          | ✅      | ✅           | [vivify-vim](https://github.com/jannis-baum/vivify.vim)  |
+| [Vi](https://en.wikipedia.org/wiki/Vi_(text_editor))        | ❌          | ❌      | ✅           |                                                          |
+| [Vim](https://www.vim.org/)       | ✅          | ✅      | ✅           | [vivify-vim](https://github.com/jannis-baum/vivify.vim)  |
 
 [How to add support for another editor](./CONTRIBUTING.md#adding-editor-support)
 
@@ -223,3 +223,4 @@ It is recommended to use a browser different from your main one for rendering.
 * [x] Support multiple vault directories
 * [ ] Port NoteWrapper to other editors (non-exhaustive list of planned ports: `emacs -nw`, `ad`, flow-control, `ee`, `amp`, `dte`, `cano`, `mle`, `zee`, `ptext`, `kibi`, `ox`, `ne`, `dit`, `zile`, `moe`, `joe`, `pico`, `vis`)
 * [x] Default to $EDITOR
+* [ ] Refactoring the source code
