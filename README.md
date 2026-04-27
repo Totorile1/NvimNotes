@@ -43,6 +43,7 @@ Before building NoteWrapper, you must install the following dependencies:
 You must also have a [supported editor (and their associated plugin if needed)](#editor-support) installed:
 
 * `helix`
+* `jed`
 * `kakoune`
 * `micro`
 * `nano`
@@ -145,6 +146,7 @@ If your editor does not support these features, you can implement a plugin using
 | Editor    | Bufferless  | Cursor  | Jump to end  | Aditional requirements                                   |
 | --------- | ----------- | ------- | ------------ | ---------------------------------------------------------|
 | Helix     | ❌          | ❌      | ✅           | —                                                        |
+| Jed       | ❌          | ❌      | ✅           | —                                                        |
 | Kakoune   | ❌          | ❌      | ✅           | —                                                        |
 | Micro     | ❌          | ✅      | ✅           | [micro-vivify](https://codeberg.org/gibbert/micro-vivify) and [modifications to your `init.lua`](./docs/micro.md)|
 | Nano      | ❌          | ❌      | ✅           | —                                                        |
@@ -219,5 +221,5 @@ It is recommended to use a browser different from your main one for rendering.
 
 * [ ] A converter between journal types
 * [x] Support multiple vault directories
-* [ ] Port NoteWrapper to other editors (non-exhaustive list of planned ports: `emacs -nw`, `jed`, `ad`, flow-control, `ee`, `amp`, `dte`, `cano`, `mle`, `zee`, `ptext`, `kibi`, `ox`, `ne`, `dit`, `zile`, `moe`, `joe`, `pico`, `vis`)
+* [ ] Port NoteWrapper to other editors (non-exhaustive list of planned ports: `emacs -nw`, `ad`, flow-control, `ee`, `amp`, `dte`, `cano`, `mle`, `zee`, `ptext`, `kibi`, `ox`, `ne`, `dit`, `zile`, `moe`, `joe`, `pico`, `vis`)
 * [x] Default to $EDITOR
