@@ -23,3 +23,17 @@ run: $(TARGET)
 
 clean:
 	rm -f $(TARGET)
+
+test: $(TARGET)
+	@timeout 5s ./$(TARGET); \
+	status=$$?; \
+	if [ $$status -eq 124 ]; then \
+		echo "Program ran for 5 seconds without crashing ✅"; \
+		exit 0; \
+	elif [ $$status -ne 0 ]; then \
+		echo "Program crashed ❌"; \
+		exit 1; \
+	else \
+		echo "Program exited cleanly ✅"; \
+		exit 0; \
+	fi
