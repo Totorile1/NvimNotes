@@ -1,5 +1,4 @@
 #include "utils.h"
-#include "string.h"
 
 const char *supportedEditor[] = {"helix", "kakoune", "micro", "nano", "neovim", "vi", "vim"};
 const int numEditors = 7;
@@ -166,6 +165,7 @@ void handleBackups(char **sourceDirectoryArray, const int sourceNumber, char **d
     struct stat st;
     if (stat(cacheFilePATH, &st) != 0) { // file does not exist
         shouldBackup = 1;
+        debug("Creating (for the first time) %s", cacheFilePATH);
         FILE *cacheFile = fopen(cacheFilePATH, "w");
         if (!cacheFile) {
             error(1, "program", "Failed to open cache file for writing: %s", cacheFilePATH);
@@ -174,6 +174,7 @@ void handleBackups(char **sourceDirectoryArray, const int sourceNumber, char **d
         fclose(cacheFile);
     } else {
         FILE *cacheFile = fopen(cacheFilePATH, "r");
+        debug("reading %s", cacheFilePATH);
         if (!cacheFile) {
             error(1, "program", "Failed to open cache file for reading: %s", cacheFilePATH);
         }
@@ -191,6 +192,7 @@ void handleBackups(char **sourceDirectoryArray, const int sourceNumber, char **d
         }
 
         if (difftime(now, lastBackupTime) > interval) {
+            debug("(difftime) %d is greater than (interval) %d -> backuping...", difftime(now, lastBackupTime), interval);
             shouldBackup = 1;
             cacheFile = fopen(cacheFilePATH, "w");
             if (!cacheFile) {
@@ -198,11 +200,15 @@ void handleBackups(char **sourceDirectoryArray, const int sourceNumber, char **d
             }
             fprintf(cacheFile, "%ld\n", (long)now);
             fclose(cacheFile);
+        } else {
+          debug("(difftime) %d is smaller than (interval) %d -> no need to backup.", difftime(now, lastBackupTime), interval);
         }
     }
 
     if (shouldBackup) {
+      debug("A backup is needed");
       for (int i = 0; i < sourceNumber; i++) {
+        debug("%s", destinationDirectoryArray[i]);
         if (destinationDirectoryArray[i]) { // if we don't want to backup it, it was set to NULL
           copyDir(sourceDirectoryArray[i], destinationDirectoryArray[i], rsyncArguments, rsyncArgumentsNumber, shouldDebug);
         }
@@ -230,7 +236,7 @@ int isEditorValid (char *editorToCheck, int useDefaultEditor, int shouldDebug) {
     }
     char *path_env = getenv("PATH");
     error(!path_env, "program", "getenv(\"PATH\") failed to get your path. NoteWrapper is unable to check if your desired editor is installed\n");
-    debug("Your PATH is %s\n", path_env);
+    debug("Your PATH is %s", path_env);
     char *paths = strdup(path_env); // duplicate because strtok modifies the string
     char *dir = strtok(paths, ":");
     while (dir) {

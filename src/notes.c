@@ -140,7 +140,7 @@ char **getVaultsFromDirectories(char **directoryStringArray, int directoryNumber
         //checking the metadata to see if it is a dir
         struct stat metadataEntry;
         if (stat(tempFullEntryPath, &metadataEntry) == 0 && S_ISDIR(metadataEntry.st_mode)) { // get's the metadata (stat should return 0 if fails) and sees if it is a dir.
-          altDebug(" is a vault\n");
+          altDebug(" is a vault");
           vaultsArray = realloc(vaultsArray, sizeof(char *)*(nthVault + 1)); // resize vaultsArray
           error(vaultsArray == NULL, "program", "realloc failed");
           vaultsPerDirectoryNumber[i]++; // it will be used later to know which vaults goes into which directory
@@ -148,10 +148,10 @@ char **getVaultsFromDirectories(char **directoryStringArray, int directoryNumber
           error(vaultsArray[nthVault] == NULL, "program", "strdup failed");
           nthVault++; // it is used immediatly to set the vault into directoryStringArray
         } else {
-          altDebug(" is not a vault (not a dir.)\n");
+          altDebug(" is not a vault (not a dir.)");
         }
       } else {
-        altDebug(" is not a vault (hidden file/dir)\n");
+        altDebug(" is not a vault (hidden file/dir)");
       }
     }
     // we sort entries for the same vault. We can't sort them all. This would break the order.
