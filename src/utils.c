@@ -23,8 +23,7 @@ void getCurrentTime(int *hour, int *minute, int *second) {
     *second = local->tm_sec; // Extract seconds
 }
 
-void _debug(const int d, const char *file, const int line, const char *function,
-            const char *message, ...) { // use for formatted debug
+void _debug(const int d, const char *file, const int line, const char *function, const char *message, ...) { // use for formatted debug
     if (d) {
         fflush(stdout);
         fflush(stderr);
@@ -32,8 +31,7 @@ void _debug(const int d, const char *file, const int line, const char *function,
         va_start(args, message);
         int h, m, s;
         getCurrentTime(&h, &m, &s);
-        fprintf(stderr, "\e[0;32m[DEBUG -- %d:%d:%d] From file %s line %d function %s:\e[0m\n", h,
-                m, s, file, line, function);
+        fprintf(stderr, "\e[0;32m[DEBUG -- %d:%d:%d] From file %s line %d function %s:\e[0m\n", h, m, s, file, line, function);
         vfprintf(stderr, message, args);
         fprintf(stderr, "\e[0m\n");
         va_end(args);
@@ -51,14 +49,12 @@ void _altDebug(const int d, const char *message,
     }
 }
 
-void _error(const int shouldDebug, const int condition, const char *type, const char *file,
-            const int line, const char *function, const char *message,
+void _error(const int shouldDebug, const int condition, const char *type, const char *file, const int line, const char *function, const char *message,
             ...) { // used for formatted errors
     if (condition) {
         int h, m, s;
         getCurrentTime(&h, &m, &s);
-        fprintf(stderr, "\e[0;31m[%s ERROR -- %d:%d:%d] From file %s line %d function %s:\n", type,
-                h, m, s, file, line, function);
+        fprintf(stderr, "\e[0;31m[%s ERROR -- %d:%d:%d] From file %s line %d function %s:\n", type, h, m, s, file, line, function);
         if (errno != 0) {
             fprintf(stderr, " (System-level error message: %s)\n", strerror(errno));
         } else {
@@ -76,8 +72,7 @@ void _error(const int shouldDebug, const int condition, const char *type, const 
     }
 }
 
-static void copyDir(const char *source, const char *destination, const char **rsyncArgs,
-                    const int rsyncArgsNumber, const int shouldDebug) {
+static void copyDir(const char *source, const char *destination, const char **rsyncArgs, const int rsyncArgsNumber, const int shouldDebug) {
     debug("Backuping... source: %s and destination: %s", source, destination);
     debug("Rsync has %d extra arguments", rsyncArgsNumber);
     pid_t pid = fork();
@@ -171,9 +166,7 @@ void initAppFilesAndDirs(const char *home, const int shouldDebug) {
     fclose(w);
 }
 
-void handleBackups(char **sourceDirectoryArray, const int sourceNumber,
-                   char **destinationDirectoryArray, const char *homeDir, const int interval,
-                   const char **rsyncArguments, const int rsyncArgumentsNumber,
+void handleBackups(char **sourceDirectoryArray, const int sourceNumber, char **destinationDirectoryArray, const char *homeDir, const int interval, const char **rsyncArguments, const int rsyncArgumentsNumber,
                    const int shouldDebug) {
     int shouldBackup = 0;
     time_t now = time(NULL);
@@ -211,8 +204,7 @@ void handleBackups(char **sourceDirectoryArray, const int sourceNumber,
         }
 
         if (difftime(now, lastBackupTime) > interval) {
-            debug("(difftime) %d is greater than (interval) %d -> backuping...",
-                  difftime(now, lastBackupTime), interval);
+            debug("(difftime) %d is greater than (interval) %d -> backuping...", difftime(now, lastBackupTime), interval);
             shouldBackup = 1;
             cacheFile = fopen(cacheFilePATH, "w");
             if (!cacheFile) {
@@ -221,8 +213,7 @@ void handleBackups(char **sourceDirectoryArray, const int sourceNumber,
             fprintf(cacheFile, "%ld\n", (long)now);
             fclose(cacheFile);
         } else {
-            debug("(difftime) %d is smaller than (interval) %d -> no need to backup.",
-                  difftime(now, lastBackupTime), interval);
+            debug("(difftime) %d is smaller than (interval) %d -> no need to backup.", difftime(now, lastBackupTime), interval);
         }
     }
 
@@ -231,8 +222,7 @@ void handleBackups(char **sourceDirectoryArray, const int sourceNumber,
         for (int i = 0; i < sourceNumber; i++) {
             debug("%s", destinationDirectoryArray[i]);
             if (destinationDirectoryArray[i]) { // if we don't want to backup it, it was set to NULL
-                copyDir(sourceDirectoryArray[i], destinationDirectoryArray[i], rsyncArguments,
-                        rsyncArgumentsNumber, shouldDebug);
+                copyDir(sourceDirectoryArray[i], destinationDirectoryArray[i], rsyncArguments, rsyncArgumentsNumber, shouldDebug);
             }
         }
     }
@@ -257,10 +247,9 @@ int isEditorValid(char *editorToCheck, int useDefaultEditor,
     }
     // check if installed
     char *editor;
-    if (strcmp(editorToCheck, "neovim") ==
-        0) {                     // some executables are not name the same as the project
-        editor = strdup("nvim"); // we must use strdup and not just copy as we would have modified
-                                 // editorToOpen in main
+    if (strcmp(editorToCheck, "neovim") == 0) { // some executables are not name the same as the project
+        editor = strdup("nvim");                // we must use strdup and not just copy as we would have modified
+                                                // editorToOpen in main
     } else if (strcmp(editorToCheck, "helix") == 0) {
         editor = strdup("hx");
     } else if (strcmp(editorToCheck, "kakoune") == 0) {
@@ -312,8 +301,7 @@ int isStringInArray(const char *string, const char **array, const int len) {
 
 int isStringInFile(const char *path, const char *string, const int shouldDebug) {
     FILE *file = fopen(path, "r");
-    error(file == NULL, "program", "While searching for \"%s\", we could not open file %s", string,
-          path);
+    error(file == NULL, "program", "While searching for \"%s\", we could not open file %s", string, path);
     char buf[BUFFER_SIZE];
 
     while (fgets(buf, BUFFER_SIZE, file) != NULL) {
@@ -361,8 +349,7 @@ void appendToFile(const char *path, const char *string, const int shouldDebug) {
 void sanitize(char *string) {
     size_t stringLenght = strlen(string);
     for (size_t i = 0; i < stringLenght; i++) {
-        if ((!isalnum((unsigned char)string[i]) &&
-             strchr("~/\\:*?\"\'|!$[]{}<>\n\r\t", string[i]))) { // replace unwanted chars by '_'
+        if ((!isalnum((unsigned char)string[i]) && strchr("~/\\:*?\"\'|!$[]{}<>\n\r\t", string[i]))) { // replace unwanted chars by '_'
             string[i] = '_';
         }
     }
@@ -387,9 +374,7 @@ int unlink_cb(const char *filePath, const struct stat *sb, int typeflag, struct 
 
     // some sanity checks to be sure that we don't delete something we shouldn't
     error(strcmp(filePath, "") == 0, "program", "filePath is empty. Refusing to delete directory");
-    error(filePath[0] == '.', "program",
-          "%s starts with \".\". For security reasons, use absolute path and not relative path.",
-          filePath);
+    error(filePath[0] == '.', "program", "%s starts with \".\". For security reasons, use absolute path and not relative path.", filePath);
 
     int rv = remove(filePath);
     error(rv, "program", "remove() failed to delete %s", filePath);
@@ -661,9 +646,8 @@ int openEditor(char *path, char *editor, int render, int shouldJumpToEndOfFile, 
     // PARENT: wait ONLY editor
     // =========================
     int status;
-    while (waitpid(editor_pid, &status, 0) ==
-           -1) { // we can't just use waitpid(). Because when resizing the terminal, waitpid() is
-                 // returned so we loop to see if there is not a problem
+    while (waitpid(editor_pid, &status, 0) == -1) { // we can't just use waitpid(). Because when resizing the terminal, waitpid() is
+                                                    // returned so we loop to see if there is not a problem
         if (errno != EINTR) {
             perror("waitpid");
             break;

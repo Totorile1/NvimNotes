@@ -1,9 +1,7 @@
 #include "notes.h"
 #include "utils.h"
 
-char *getDirectoryFromVault(char *targetVault, char **vaultsArray, int vaultTotalNumber,
-                            int *vaultNumberPerDirectory, char **directoryArray,
-                            int directoryNumber, int shouldDebug) {
+char *getDirectoryFromVault(char *targetVault, char **vaultsArray, int vaultTotalNumber, int *vaultNumberPerDirectory, char **directoryArray, int directoryNumber, int shouldDebug) {
     debug("Searching the vault %s inside all the directories...", targetVault);
     debug("Here are how many vaults there is per directory:");
     for (int i = 0; i < directoryNumber; i++) {
@@ -29,8 +27,7 @@ char *getDirectoryFromVault(char *targetVault, char **vaultsArray, int vaultTota
            "Such person would be a terrible monster... One must imagine GCC and clangd happy.";
 }
 
-char **getJournalsFromVault(char *pathToVault, char *vault, char *journalRegex, int *count,
-                            int shouldDebug) {
+char **getJournalsFromVault(char *pathToVault, char *vault, char *journalRegex, int *count, int shouldDebug) {
     debug("Searching %s for journals", vault);
     // originally from
     // https://www.geeksforgeeks.org/c/c-program-list-files-sub-directories-directory/
@@ -41,34 +38,27 @@ char **getJournalsFromVault(char *pathToVault, char *vault, char *journalRegex, 
     DIR *vaultDirectory = opendir(tempPath);
     error(vaultDirectory == NULL, "program", "Could not open directory %s", tempPath);
     char **journalsArray = NULL; // will contain all the notes
-    int journalsCount =
-        0; // we need to count how many notes there is to always readjust how many memory we alloc
+    int journalsCount = 0;       // we need to count how many notes there is to always readjust how many memory we alloc
 
     // https://stackoverflow.com/a/1085120 for regex code
     regex_t regex;
     int regexReturn;
     // compiles the regex
     regexReturn = regcomp(&regex, journalRegex, 0);
-    error(regexReturn, "program",
-          "Regex could not compile. Perhaps there is an error with the regex string");
+    error(regexReturn, "program", "Regex could not compile. Perhaps there is an error with the regex string");
     debug("Regex compiled succesfully");
     // Refer https://pubs.opengroup.org/onlinepubs/7990989775/xsh/readdir.html
     // for readdir()
     debug("┌------------------------------------------\nDetected files and dirs from the vault");
-    while (
-        (vaultEntry = readdir(vaultDirectory)) !=
-        NULL) { // we iterate over every entry from the dir. So files and dirs (. and .. included)
+    while ((vaultEntry = readdir(vaultDirectory)) != NULL) { // we iterate over every entry from the dir. So files and dirs (. and .. included)
         altDebug("%s  ", vaultEntry->d_name);
-        if (vaultEntry->d_name[0] !=
-            '.') { // if the entry don't start with a dot (so hidden dirs and hidden files)
+        if (vaultEntry->d_name[0] != '.') { // if the entry don't start with a dot (so hidden dirs and hidden files)
             regexReturn = regexec(&regex, vaultEntry->d_name, 0, NULL, 0);
             if (!regexReturn) { // if the regex matches
                 altDebug("matched with the regex. It is a journal.\n");
-                journalsArray =
-                    realloc(journalsArray,
-                            (journalsCount + 1) * sizeof(char *)); // resize notesArray so that
-                journalsArray[journalsCount] =
-                    strdup(vaultEntry->d_name); // copy the dir name into notesArray
+                journalsArray = realloc(journalsArray,
+                                        (journalsCount + 1) * sizeof(char *)); // resize notesArray so that
+                journalsArray[journalsCount] = strdup(vaultEntry->d_name);     // copy the dir name into notesArray
                 journalsCount++;
             } else {
                 altDebug("did not matched with the regex. It is a note.\n");
@@ -84,8 +74,7 @@ char **getJournalsFromVault(char *pathToVault, char *vault, char *journalRegex, 
     return journalsArray;
 }
 
-char **getNotesFromVault(char *pathToVault, char *vault, char *journalRegex, int *count,
-                         int shouldDebug) {
+char **getNotesFromVault(char *pathToVault, char *vault, char *journalRegex, int *count, int shouldDebug) {
     // this function is inputed a path to a vault (which was selected before) and outpus all the
     // suitable notes (so not the hidden ones) originally from
     // https://www.geeksforgeeks.org/c/c-program-list-files-sub-directories-directory/
@@ -97,8 +86,7 @@ char **getNotesFromVault(char *pathToVault, char *vault, char *journalRegex, int
     DIR *vaultDirectory = opendir(tempPath);
     error(vaultDirectory == NULL, "program", "Could not open directory %s", tempPath);
     char **notesArray = NULL; // will contain all the notes
-    int notesCount =
-        0; // we need to count how many notes there is to always readjust how many memory we alloc
+    int notesCount = 0;       // we need to count how many notes there is to always readjust how many memory we alloc
     // Refer https://pubs.opengroup.org/onlinepubs/7990989775/xsh/readdir.html
     // for readdir()
     debug("┌------------------------------\nDetected Files and dirs from the vault:");
@@ -111,22 +99,18 @@ char **getNotesFromVault(char *pathToVault, char *vault, char *journalRegex, int
         int regexReturn;
         // compiles the regex
         regexReturn = regcomp(&regex, journalRegex, 0);
-        if (entryName[0] !=
-            '.') { // if the entry don't start with a dot (so hidden dirs and hidden files)
+        if (entryName[0] != '.') {        // if the entry don't start with a dot (so hidden dirs and hidden files)
             char fullPathEntry[PATH_MAX]; // creates a string of size of the maximum path lenght
             snprintf(fullPathEntry, sizeof(fullPathEntry), "%s/%s/%s", pathToVault, vault,
                      entryName); // sets the full absolute path to fullPathEntry
             // check if it matches the regex. If it does not match regexReturn != 0.
             regexReturn = regexec(&regex, entryName, 0, NULL, 0);
             struct stat metadataPathEntry;
-            if (stat(fullPathEntry, &metadataPathEntry) == 0 && entryName[entryLenght - 3] == '.' &&
-                entryName[entryLenght - 2] == 'm' && entryName[entryLenght - 1] == 'd' &&
-                regexReturn &&
-                S_ISREG(metadataPathEntry.st_mode)) { // if this entry is a file ending in .md and
-                                                      // that does no match the regex
-                notesArray = realloc(notesArray, (notesCount + 1) *
-                                                     sizeof(char *)); // resize notesArray so that
-                notesArray[notesCount] = strdup(entryName); // copy the dir name into notesArray
+            if (stat(fullPathEntry, &metadataPathEntry) == 0 && entryName[entryLenght - 3] == '.' && entryName[entryLenght - 2] == 'm' && entryName[entryLenght - 1] == 'd' && regexReturn &&
+                S_ISREG(metadataPathEntry.st_mode)) {                                // if this entry is a file ending in .md and
+                                                                                     // that does no match the regex
+                notesArray = realloc(notesArray, (notesCount + 1) * sizeof(char *)); // resize notesArray so that
+                notesArray[notesCount] = strdup(entryName);                          // copy the dir name into notesArray
                 notesCount++;
                 altDebug("did not match with the regex. It is a note.\n");
             } else if (!regexReturn) {
@@ -144,8 +128,7 @@ char **getNotesFromVault(char *pathToVault, char *vault, char *journalRegex, int
     return notesArray;
 }
 
-char **getVaultsFromDirectories(char **directoryStringArray, int directoryNumber,
-                                int *vaultsPerDirectoryNumber, int *count, int shouldDebug) {
+char **getVaultsFromDirectories(char **directoryStringArray, int directoryNumber, int *vaultsPerDirectoryNumber, int *count, int shouldDebug) {
     // to avoid having to work with a tree-dimensional array. We will use a 2d and
     // vaultsPerDirectoryNumber will indicate the width of the directories.
     char **vaultsArray = NULL;
@@ -160,8 +143,7 @@ char **getVaultsFromDirectories(char **directoryStringArray, int directoryNumber
         DIR *vaultsDirectory = opendir(directoryStringArray[i]);
         error(!vaultsDirectory, "program", "Could not open directory %s", directoryStringArray[i]);
         vaultsPerDirectoryNumber[i] = 0;
-        debug("┌------------------------------\n Detected files and dirs %s:",
-              directoryStringArray[i]);
+        debug("┌------------------------------\n Detected files and dirs %s:", directoryStringArray[i]);
         // Refer https://pubs.opengroup.org/onlinepubs/7990989775/xsh/readdir.html
         // for readdir()
         while ((vaultsDirectoryEntry = readdir(vaultsDirectory)) != NULL) {
@@ -174,18 +156,15 @@ char **getVaultsFromDirectories(char **directoryStringArray, int directoryNumber
                 altDebug(" (%s)", tempFullEntryPath);
                 // checking the metadata to see if it is a dir
                 struct stat metadataEntry;
-                if (stat(tempFullEntryPath, &metadataEntry) == 0 &&
-                    S_ISDIR(metadataEntry.st_mode)) { // get's the metadata (stat should return 0 if
-                                                      // fails) and sees if it is a dir.
+                if (stat(tempFullEntryPath, &metadataEntry) == 0 && S_ISDIR(metadataEntry.st_mode)) { // get's the metadata (stat should return 0 if
+                                                                                                      // fails) and sees if it is a dir.
                     altDebug(" is a vault");
-                    vaultsArray =
-                        realloc(vaultsArray, sizeof(char *) * (nthVault + 1)); // resize vaultsArray
+                    vaultsArray = realloc(vaultsArray, sizeof(char *) * (nthVault + 1)); // resize vaultsArray
                     error(vaultsArray == NULL, "program", "realloc failed");
-                    vaultsPerDirectoryNumber[i]++; // it will be used later to know which vaults
-                                                   // goes into which directory
-                    vaultsArray[nthVault] =
-                        strdup(entryName); // we use strdup and not strcpy, because memory used with
-                                           // opendir and readdir will be closed.
+                    vaultsPerDirectoryNumber[i]++;             // it will be used later to know which vaults
+                                                               // goes into which directory
+                    vaultsArray[nthVault] = strdup(entryName); // we use strdup and not strcpy, because memory used with
+                                                               // opendir and readdir will be closed.
                     error(vaultsArray[nthVault] == NULL, "program", "strdup failed");
                     nthVault++; // it is used immediatly to set the vault into directoryStringArray
                 } else {
@@ -209,11 +188,9 @@ char **getVaultsFromDirectories(char **directoryStringArray, int directoryNumber
     return vaultsArray;
 }
 
-char *updateJournal(char *path, char *journal, char *timeFormat, int *journalWasUpdated,
-                    int shouldDebug) {
-    path[PATH_MAX] =
-        '\0'; // it assures it is a string (Most cases this does nothing). But rewriting at least
-              // one bytes make the compile happy. He doesn't want to return an unchanged input.
+char *updateJournal(char *path, char *journal, char *timeFormat, int *journalWasUpdated, int shouldDebug) {
+    path[PATH_MAX] = '\0'; // it assures it is a string (Most cases this does nothing). But rewriting at least
+                           // one bytes make the compile happy. He doesn't want to return an unchanged input.
     debug("Handling the journal %s", path);
 
     char *date = getFormatedTime(timeFormat, shouldDebug);
@@ -221,8 +198,7 @@ char *updateJournal(char *path, char *journal, char *timeFormat, int *journalWas
     char dateWithExtension[PATH_MAX];
     snprintf(dateWithExtension, PATH_MAX, "%s.md", date);
     sanitize(dateWithExtension);
-    debug("Sanitized date: %s\n(it might be used later for a file name if the journal is divided)",
-          dateWithExtension);
+    debug("Sanitized date: %s\n(it might be used later for a file name if the journal is divided)", dateWithExtension);
     struct stat metadata;
     stat(path, &metadata);
     if (S_ISREG(metadata.st_mode)) {
@@ -260,19 +236,15 @@ char *updateJournal(char *path, char *journal, char *timeFormat, int *journalWas
         // iterates over all the entries from the dir
         while ((dividedJournalEntry = readdir(dividedJournalDirectory)) != NULL) {
             altDebug("%s\n", dividedJournalEntry->d_name);
-            if (dividedJournalEntry->d_name[0] !=
-                '.') { // if the entry don't start with a dot (so hidden dirs and hidden files)
-                char fullPathEntry[PATH_MAX]; // creates a string of size of the maximum path lenght
-                snprintf(
-                    fullPathEntry, sizeof(fullPathEntry), "%s/%s", path,
-                    dividedJournalEntry->d_name); // sets the full absolute path to fullPathEntry
+            if (dividedJournalEntry->d_name[0] != '.') { // if the entry don't start with a dot (so hidden dirs and hidden files)
+                char fullPathEntry[PATH_MAX];            // creates a string of size of the maximum path lenght
+                snprintf(fullPathEntry, sizeof(fullPathEntry), "%s/%s", path,
+                         dividedJournalEntry->d_name); // sets the full absolute path to fullPathEntry
 
                 struct stat metadataPathEntry;
-                if (stat(fullPathEntry, &metadataPathEntry) == 0 &&
-                    S_ISREG(metadataPathEntry.st_mode)) { // if this entry is a directory
+                if (stat(fullPathEntry, &metadataPathEntry) == 0 && S_ISREG(metadataPathEntry.st_mode)) { // if this entry is a directory
                     entryArray = realloc(entryArray, (entryCount + 1) * sizeof(char *));
-                    entryArray[entryCount] =
-                        strdup(dividedJournalEntry->d_name); // copy the dir name into entryArray
+                    entryArray[entryCount] = strdup(dividedJournalEntry->d_name); // copy the dir name into entryArray
                     entryCount++;
                 }
             }
@@ -287,19 +259,14 @@ char *updateJournal(char *path, char *journal, char *timeFormat, int *journalWas
                                      // element
 
         // we must now select to create new entry or to enter in old one
-        char *selectedOption = ncursesSelect(
-            entryArray,
-            "Create new entry or acces old entry (Use arrows or WASD, Enter to select):",
-            extraOptions, entryCount - extraOptions, " ", " ", "",
-            shouldDebug); // the "Create new entry for the journal %s" will be the only options. All
-                          // other will be extraOptions. This is made so that "Create [...] %s" will
-                          // always be on top
+        char *selectedOption = ncursesSelect(entryArray, "Create new entry or acces old entry (Use arrows or WASD, Enter to select):", extraOptions, entryCount - extraOptions, " ", " ", "",
+                                             shouldDebug); // the "Create new entry for the journal %s" will be the only options. All
+                                                           // other will be extraOptions. This is made so that "Create [...] %s" will
+                                                           // always be on top
         debug("Selected option from journal entry selection: %s", selectedOption);
         if (strcmp(selectedOption, createEntryMessage) == 0) { // create new entry
             char temp[PATH_MAX];
-            error(strlen(path) + 1 + strlen(dateWithExtension) + 1 > PATH_MAX,
-                  "Error file path too long. %s/%s must not exceed PATH_MAX", path,
-                  dateWithExtension);
+            error(strlen(path) + 1 + strlen(dateWithExtension) + 1 > PATH_MAX, "Error file path too long. %s/%s must not exceed PATH_MAX", path, dateWithExtension);
             snprintf(temp, PATH_MAX, "%s/%s", path, dateWithExtension);
             strncpy(path, temp, PATH_MAX);
             if (!isStringInArray(dateWithExtension, (const char **)entryArray,
@@ -315,19 +282,13 @@ char *updateJournal(char *path, char *journal, char *timeFormat, int *journalWas
                 free(createEntryMessage);
                 *journalWasUpdated = 1;
             } else {
-                debug("Today's entry (%s) already exist. We won't create a new one.",
-                      dateWithExtension);
+                debug("Today's entry (%s) already exist. We won't create a new one.", dateWithExtension);
             }
-        } else if (strcmp(selectedOption, entryArray[1]) ==
-                   0) { // if we choosed to open a random entry
+        } else if (strcmp(selectedOption, entryArray[1]) == 0) { // if we choosed to open a random entry
             // setting up the seed for rand()
-            srand(time(NULL)); // not totaly random, just pseudorandom
-            int randomEntry =
-                extraOptions +
-                (rand() %
-                 (entryCount -
-                  extraOptions)); // we get a random number between extraOptions and entryCount (so
-                                  // all journal entries and not extraOptions)
+            srand(time(NULL));                                                       // not totaly random, just pseudorandom
+            int randomEntry = extraOptions + (rand() % (entryCount - extraOptions)); // we get a random number between extraOptions and entryCount (so
+                                                                                     // all journal entries and not extraOptions)
             char temp[PATH_MAX];
             snprintf(temp, PATH_MAX, "%s/%s", path,
                      entryArray[randomEntry]); // reconstruct the path
@@ -335,9 +296,8 @@ char *updateJournal(char *path, char *journal, char *timeFormat, int *journalWas
             debug("Selected random entry %s. It's path is %s.", entryArray[randomEntry], path);
         } else if (strcmp(selectedOption, entryArray[2]) == 0) { // if we choosed to search
             char *temp = fzfSelect(path, "Input text to be searched",
-                                   shouldDebug); // uses ripgrep and fzf to search inside the files
-            char *selectedOption =
-                malloc(PATH_MAX); // we can't just use path as both input and output of snprintf
+                                   shouldDebug);     // uses ripgrep and fzf to search inside the files
+            char *selectedOption = malloc(PATH_MAX); // we can't just use path as both input and output of snprintf
             snprintf(selectedOption, PATH_MAX, "%s/%s", path, temp);
             path = strdup(selectedOption);
             free(selectedOption);
