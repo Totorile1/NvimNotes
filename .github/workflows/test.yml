@@ -26,4 +26,6 @@ jobs:
       run: make
 
     - name: Run tests
-      run: make test
+      run: |
+        export TERM=xterm
+        make test
