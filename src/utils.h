@@ -26,11 +26,9 @@
 #define DAILY 86400
 #define WEEKLY 604800
 #define MONTHLY 2628000 // calculated from the average lenght of a non leap year
-#define debug(message, ...)                                                                        \
-    _debug(shouldDebug, __FILE__, __LINE__, __func__, message, ##__VA_ARGS__)
+#define debug(message, ...) _debug(shouldDebug, __FILE__, __LINE__, __func__, message, ##__VA_ARGS__)
 #define altDebug(message, ...) _altDebug(shouldDebug, message, ##__VA_ARGS__)
-#define error(condition, type, message, ...)                                                       \
-    _error(shouldDebug, condition, type, __FILE__, __LINE__, __func__, message, ##__VA_ARGS__)
+#define error(condition, type, message, ...) _error(shouldDebug, condition, type, __FILE__, __LINE__, __func__, message, ##__VA_ARGS__)
 // you must edit this two values if you want to add suport for an editor
 extern const char *supportedEditor[]; // array of supported editors
 extern const int numEditors;          // number of supported editors
@@ -48,13 +46,11 @@ int reverseCompareString(const void *a, const void *b);
 int isEditorValid(char *editorToCheck, int useDefaultEditor, int debug);
 // please use the macro debug instead of _debug.
 // formated debugging.
-void _debug(const int d, const char *file, const int line, const char *function,
-            const char *message, ...);
+void _debug(const int d, const char *file, const int line, const char *function, const char *message, ...);
 // use for less formal debuggin. (usefull if enumerating or making a list).
 void _altDebug(const int d, const char *message, ...);
 // formated error.
-void _error(const int shouldDebug, const int condition, const char *type, const char *file,
-            const int line, const char *function, const char *message, ...);
+void _error(const int shouldDebug, const int condition, const char *type, const char *file, const int line, const char *function, const char *message, ...);
 // Returns 1 if the string is in the array.
 // Returns 0 if the string is not in the array.
 // If you want to only check the first n elements of the array, pass n as len.
@@ -86,7 +82,6 @@ Each pair of source/destination will launch one rsync process.
 If a pair don't need to be backed up, the destination should be set to NULL.
 rsyncArgs is the array of arguments to be passed to rsync. Do not inclue destination or source. It
 will be added in the function.*/
-void handleBackups(char **sourceDirectoryArray, const int sourceDirectoryNumber,
-                   char **destinationDirectoryArray, const char *homeDir, const int interval,
-                   const char **rsyncArgs, const int rsyncArgsNumber, const int shouldDebug);
+void handleBackups(char **sourceDirectoryArray, const int sourceDirectoryNumber, char **destinationDirectoryArray, const char *homeDir, const int interval, const char **rsyncArgs, const int rsyncArgsNumber,
+                   const int shouldDebug);
 #endif

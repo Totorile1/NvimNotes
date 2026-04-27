@@ -1,16 +1,12 @@
 #include "ui.h"
 #include "utils.h"
 
-void createNewVault(char **directoriesArray, int directoryCount, char **vaultsArray, int vaultCount,
-                    int bypass, char *bypassvalue, int shouldDebug) {
+void createNewVault(char **directoriesArray, int directoryCount, char **vaultsArray, int vaultCount, int bypass, char *bypassvalue, int shouldDebug) {
     int duplicateWarning = 0; // set to 1 later if the vault you tried to create already existed
     int emptyWarning = 0;     // set to 1 later if inpted empty name
 input_screen:
     // choose in which directory the vault will be created
-    char *dirToVault = ncursesSelect(
-        directoriesArray,
-        "Select a directory, in which the vault will remain (Use arrows or WASD, Enter to select)",
-        directoryCount, 0, "", "", " ", shouldDebug);
+    char *dirToVault = ncursesSelect(directoriesArray, "Select a directory, in which the vault will remain (Use arrows or WASD, Enter to select)", directoryCount, 0, "", "", " ", shouldDebug);
     char *vaultName = malloc(PATH_MAX);
     if (!bypass) { // if won't bypass (if -v or --vault weren't set)
         echo();
@@ -69,8 +65,7 @@ input_screen:
     free(vaultName);
 }
 
-char *createNewNote(char dirToVault[PATH_MAX], char *vaultFromDir, int bypass, char *bypassvalue,
-                    char *journalRegex, int shouldDebug) {
+char *createNewNote(char dirToVault[PATH_MAX], char *vaultFromDir, int bypass, char *bypassvalue, char *journalRegex, int shouldDebug) {
     // input from user for the name
     char *fileName = malloc(BUFFER_SIZE);
     if (!bypass) { // if we don't bypass. (if -n or --note weren't set.)
@@ -96,10 +91,9 @@ char *createNewNote(char dirToVault[PATH_MAX], char *vaultFromDir, int bypass, c
         strncpy(fileName, bypassvalue, BUFFER_SIZE);
         fileName[BUFFER_SIZE - 1] = '\0';
     }
-    error(
-        strcmp(fileName, "") == 0, "user",
-        "fileName is empty"); // replace this with a warning and add a warning if duplicate file and
-                              // handle case where multiple warnings (if such case is possible)
+    error(strcmp(fileName, "") == 0, "user",
+          "fileName is empty"); // replace this with a warning and add a warning if duplicate file and
+                                // handle case where multiple warnings (if such case is possible)
     // check/sanitize the input
     debug("Inputed fileName=%s", fileName);
     sanitize(fileName);
@@ -138,11 +132,8 @@ char *createNewNote(char dirToVault[PATH_MAX], char *vaultFromDir, int bypass, c
             char *fileFullPath = malloc(PATH_MAX);
             snprintf(fileFullPath, PATH_MAX, "%s/%s/%s", dirToVault, vaultFromDir, fileName);
             int len = strlen(fileFullPath);
-            if (fileFullPath[len - 3] != '.' || fileFullPath[len - 2] != 'm' ||
-                fileFullPath[len - 1] != 'd') { // there might be a cleaner way to do this
-                error(len > PATH_MAX - 3, "user",
-                      "%s is too big (greater than PATH_MAX-3) and we can't append .md",
-                      fileFullPath);
+            if (fileFullPath[len - 3] != '.' || fileFullPath[len - 2] != 'm' || fileFullPath[len - 1] != 'd') { // there might be a cleaner way to do this
+                error(len > PATH_MAX - 3, "user", "%s is too big (greater than PATH_MAX-3) and we can't append .md", fileFullPath);
                 strncat(fileFullPath, ".md", PATH_MAX);
                 // we checked before if fileName didn't already exist.
                 // we must redo it as we add a .mode
@@ -161,10 +152,9 @@ char *createNewNote(char dirToVault[PATH_MAX], char *vaultFromDir, int bypass, c
         debug("%s does not match with %s treating it as a note", fileName, journalRegex);
         // if there is no .md add an .md
         int len = strlen(fileName);
-        if (fileName[len - 3] != '.' || fileName[len - 2] != 'm' ||
-            fileName[len - 1] != 'd') { // there might be a cleaner way to do this
-            strcat(fileName, ".md");    // this should not cause an overflow issue as we get at most
-                                     // 252 chars (+'.'+'m'+'d'+'\0' makes it to 256) with wgetnstr
+        if (fileName[len - 3] != '.' || fileName[len - 2] != 'm' || fileName[len - 1] != 'd') { // there might be a cleaner way to do this
+            strcat(fileName, ".md");                                                            // this should not cause an overflow issue as we get at most
+                                                                                                // 252 chars (+'.'+'m'+'d'+'\0' makes it to 256) with wgetnstr
         }
         char *fileFullPath = malloc(PATH_MAX); // this dinamically allocated because we use it in
                                                // the main function to call openEditor
@@ -194,8 +184,7 @@ char *fzfSelect(char *pathToFiles, char *selectText, int shouldDebug) {
      * Build index once into temp file
      * format: file:line:content
      */
-    snprintf(command, sizeof(command), "rg --line-number --no-heading --color=never . \"%s\" > %s",
-             pathToFiles, indexFile);
+    snprintf(command, sizeof(command), "rg --line-number --no-heading --color=never . \"%s\" > %s", pathToFiles, indexFile);
 
     debug("INDEX CMD: %s", command);
 
@@ -243,14 +232,13 @@ char *fzfSelect(char *pathToFiles, char *selectText, int shouldDebug) {
       --bind 'change:show-preview'
         → preview only appears after first selection change (not at startup)
     */
-    snprintf(
-        command, sizeof(command),
-        "cat %s | fzf --delimiter ':' --prompt='%s' "
-        "--preview 'file={1}; line={2}; nl -ba \"$file\" | sed -n \"$((line-5)),$((line+5))p\" | "
-        "sed \"$((line-$(($((line-5))))+1))s/^/\\x1b[31m-> \\x1b[0m/\"' "
-        "--preview-window=right:60%%:hidden "
-        "--bind 'change:show-preview'",
-        indexFile, selectText ? selectText : "> ");
+    snprintf(command, sizeof(command),
+             "cat %s | fzf --delimiter ':' --prompt='%s' "
+             "--preview 'file={1}; line={2}; nl -ba \"$file\" | sed -n \"$((line-5)),$((line+5))p\" | "
+             "sed \"$((line-$(($((line-5))))+1))s/^/\\x1b[31m-> \\x1b[0m/\"' "
+             "--preview-window=right:60%%:hidden "
+             "--bind 'change:show-preview'",
+             indexFile, selectText ? selectText : "> ");
     debug("FZF CMD: %s", command);
 
     FILE *fzfPipe = popen(command, "r");
@@ -284,11 +272,9 @@ char *fzfSelect(char *pathToFiles, char *selectText, int shouldDebug) {
     return result;
 }
 
-char *ncursesSelect(
-    char **options, char *optionsText, int optionsNumber, int extraOptionsNumber, char *bottomText,
-    char *middleText, char *topText,
-    int shouldDebug) { // TODO we should see how it handles larges strings (like large directories)
-    int highlight = 0; // curently highlighted option
+char *ncursesSelect(char **options, char *optionsText, int optionsNumber, int extraOptionsNumber, char *bottomText, char *middleText, char *topText,
+                    int shouldDebug) { // TODO we should see how it handles larges strings (like large directories)
+    int highlight = 0;                 // curently highlighted option
     int key;
 
     cbreak();             // disable line buffering

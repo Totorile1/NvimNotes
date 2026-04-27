@@ -88,9 +88,7 @@ int main(int argc, char *argv[]) {
         free(data);
         fclose(f);
     }
-    error(readBytes != size, "program",
-          "Failed to read config file (%s) (%zu bytes read, expected %ld)", configPath, readBytes,
-          size);
+    error(readBytes != size, "program", "Failed to read config file (%s) (%zu bytes read, expected %ld)", configPath, readBytes, size);
     data[size] = '\0';
     fclose(f);
 
@@ -105,8 +103,7 @@ int main(int argc, char *argv[]) {
 
     // Parse all of the directories which will( or do) contain the vaults
     cJSON *dirJson = cJSON_GetObjectItem(json, "directory");
-    error(dirJson && !cJSON_IsArray(dirJson), "user",
-          "In %s, \"directory\" is missing or isn't an array", configPath);
+    error(dirJson && !cJSON_IsArray(dirJson), "user", "In %s, \"directory\" is missing or isn't an array", configPath);
     int numDirectories = cJSON_GetArraySize(dirJson);
     debug("In %s, detected %d paths in \"directory\"", configPath, numDirectories);
     error(numDirectories == 0, "user", "In %s, \"directory\" is an empty array.", configPath);
@@ -115,9 +112,8 @@ int main(int argc, char *argv[]) {
     debug("Directories:");
     cJSON *tempEntry = NULL;
     int i = 0;
-    cJSON_ArrayForEach(
-        tempEntry,
-        dirJson) { // iterate over all the elements of the array _i. e._ over all the dirs
+    cJSON_ArrayForEach(tempEntry,
+                       dirJson) { // iterate over all the elements of the array _i. e._ over all the dirs
         if (tempEntry && cJSON_IsString(tempEntry)) {
             if (cJSON_GetStringValue(tempEntry)[0] == '~') { // we must expand ~
                 char *tempUnFixedName = cJSON_GetStringValue(tempEntry);
@@ -130,8 +126,7 @@ int main(int argc, char *argv[]) {
                 altDebug("%s\n", directoriesArray[i]);
             }
         } else {
-            error(1, "user", "In %s, in \"directory\", invalid type of one of the entries.",
-                  configPath);
+            error(1, "user", "In %s, in \"directory\", invalid type of one of the entries.", configPath);
         }
         i++;
     }
@@ -159,13 +154,11 @@ int main(int argc, char *argv[]) {
     }
 
     char *editorToOpen = getenv("EDITOR"); // default to $EDITOR
-    int defaultEditor =
-        1; // this will be used in the warning if the editor does not exists or is unsupported.
+    int defaultEditor = 1;                 // this will be used in the warning if the editor does not exists or is unsupported.
     cJSON *editorToOpenJSON = cJSON_GetObjectItem(json, "editor");
     if (editorToOpenJSON && cJSON_IsString(editorToOpenJSON)) {
-        editorToOpen = strdup(cJSON_GetStringValue(
-            editorToOpenJSON)); // we must strdup and not just = as we will free all the json after
-                                // (before parsing args)
+        editorToOpen = strdup(cJSON_GetStringValue(editorToOpenJSON)); // we must strdup and not just = as we will free all the json after
+                                                                       // (before parsing args)
         defaultEditor = 0;
         debug("In %s, \"editor\" was set to %s.", configPath, editorToOpen);
         // error(!isStringInArray(editorToOpen, supportedEditor, numEditors), "user", "%s (fetched
@@ -194,15 +187,12 @@ int main(int argc, char *argv[]) {
         timeFormat = strdup(cJSON_GetStringValue(timeFormatJSON));
         debug("In %s, \"dateEntry\" was set to %s.", configPath, timeFormat);
     } else {
-        debug(
-            "In %s, \"dateEntry\" wasn't set or we encountered a abnormal type. Defaulting to %s.",
-            configPath, timeFormat);
+        debug("In %s, \"dateEntry\" wasn't set or we encountered a abnormal type. Defaulting to %s.", configPath, timeFormat);
     }
     int newLineOnOpening = 1;
     cJSON *newLineOnOpeningJSON = cJSON_GetObjectItem(json, "newLineOnOpening");
     if (newLineOnOpeningJSON && cJSON_IsBool(newLineOnOpeningJSON)) {
-        debug("The value for newLineOnOpening in config.json is %d",
-              cJSON_IsTrue(newLineOnOpeningJSON));
+        debug("The value for newLineOnOpening in config.json is %d", cJSON_IsTrue(newLineOnOpeningJSON));
 
         newLineOnOpening = cJSON_IsTrue(newLineOnOpeningJSON) ? 1 : 0;
         debug("In %s, \"newLineOnOpening\" was set to %d.", configPath, newLineOnOpening);
@@ -213,8 +203,7 @@ int main(int argc, char *argv[]) {
     }
 
     int doesBackup = 0;
-    int interval =
-        0; // this is an int. But some times it will be inputed a string. We must translate it.
+    int interval = 0; // this is an int. But some times it will be inputed a string. We must translate it.
     // to handle linking each directory to its backup path. We create an array of char*. If we want
     // to backup the ith directory, the ith pointer will point to the path. Else, we set the ith
     // pointer to NULL.
@@ -236,9 +225,7 @@ int main(int argc, char *argv[]) {
             cJSON *pathToBackupJSON = cJSON_GetObjectItem(backupJSON, "directory");
             debug("%s", cJSON_Print(pathToBackupJSON));
             error(pathToBackupJSON == NULL &&
-                      !(cJSON_IsObject(pathToBackupJSON) || cJSON_IsArray(pathToBackupJSON) ||
-                        cJSON_IsString(pathToBackupJSON) || cJSON_IsNumber(pathToBackupJSON) ||
-                        cJSON_IsBool(pathToBackupJSON)),
+                      !(cJSON_IsObject(pathToBackupJSON) || cJSON_IsArray(pathToBackupJSON) || cJSON_IsString(pathToBackupJSON) || cJSON_IsNumber(pathToBackupJSON) || cJSON_IsBool(pathToBackupJSON)),
                   "user", "In %s, incorrect type for \"directory\". It must be a JSON object.",
                   configPath); // for some reason cJSON_IsObject does not work. So we must do it
                                // like this.
@@ -247,13 +234,11 @@ int main(int argc, char *argv[]) {
             // we must iterate over the json entries
             cJSON *directoryEntry = NULL;
             int i = 0;
-            cJSON_ArrayForEach(
-                directoryEntry,
-                dirJson) { // iterate over all the elements of the array _i. e._ over all the dirs
+            cJSON_ArrayForEach(directoryEntry,
+                               dirJson) { // iterate over all the elements of the array _i. e._ over all the dirs
                 // we don't need to type error handle as we did it before
                 char *directoryEntryPath = cJSON_GetStringValue(directoryEntry);
-                cJSON *pathToBackupForIthDirectoryJSON =
-                    cJSON_GetObjectItem(pathToBackupJSON, directoryEntryPath);
+                cJSON *pathToBackupForIthDirectoryJSON = cJSON_GetObjectItem(pathToBackupJSON, directoryEntryPath);
                 if (pathToBackupForIthDirectoryJSON) { // if the entry exist
                     char *textPath = cJSON_GetStringValue(pathToBackupForIthDirectoryJSON);
                     if (textPath[0] == '~') {
@@ -264,8 +249,7 @@ int main(int argc, char *argv[]) {
                     } else {
                         backupDirectoriesArray[i] = strdup(textPath);
                     }
-                    debug("%s will be backed up to %s", directoriesArray[i],
-                          backupDirectoriesArray[i]);
+                    debug("%s will be backed up to %s", directoriesArray[i], backupDirectoriesArray[i]);
                 } else { // we set it to NULL to be sure we won't backup it
                     backupDirectoriesArray[i] = NULL;
                     debug("%s won't be backed up", directoriesArray[i]);
@@ -276,8 +260,7 @@ int main(int argc, char *argv[]) {
             // handles the interval of backup
             cJSON *intervalJSON = cJSON_GetObjectItem(backupJSON, "interval");
             if (intervalJSON && cJSON_IsString(intervalJSON)) {
-                char *temp = cJSON_GetStringValue(
-                    intervalJSON); // se comment higher. temp will be freed when calling free(json)
+                char *temp = cJSON_GetStringValue(intervalJSON); // se comment higher. temp will be freed when calling free(json)
                 if (strcmp(temp, "daily") == 0) {
                     interval = DAILY;
                     debug("interval in %s is set to \"daily\" which is %d", configPath, DAILY);
@@ -321,8 +304,7 @@ int main(int argc, char *argv[]) {
                     rsyncArgs[i] = strdup(cJSON_GetStringValue(argJSON));
                     altDebug("%s\n", rsyncArgs[i]);
                 } else {
-                    error(1, "user", "One element in rsyncArgs array in %s is not a string",
-                          configPath);
+                    error(1, "user", "One element in rsyncArgs array in %s is not a string", configPath);
                 }
             }
         } else {
@@ -407,8 +389,7 @@ backup_config_end:
                 printf("Options:\n");
                 printf("  -c, --config <path/to/config>               Specify the config file.\n");
                 printf("  -h, --help                                  Display this message.\n");
-                printf(
-                    "  -e, --editor                                Specify the editor to open.\n");
+                printf("  -e, --editor                                Specify the editor to open.\n");
                 printf("  -j, --jump                                  Jumps to the end of the file "
                        "on opening.\n");
                 printf("  -J, --no-jump                               Do not jump to the end of "
@@ -468,8 +449,7 @@ backup_config_end:
                 case 'h':
                     printf("Usage: notewrapper [options]\n");
                     printf("Options:\n");
-                    printf(
-                        "  -c, --config <path/to/config>               Specify the config file.\n");
+                    printf("  -c, --config <path/to/config>               Specify the config file.\n");
                     printf("  -h, --help                                  Display this message.\n");
                     printf("  -e, --editor                                Specify the editor to "
                            "open.\n");
@@ -485,8 +465,7 @@ backup_config_end:
                     printf("  -v, --vault <vault's name>                  Specify the vault.\n");
                     printf("  --version                                   Display the program "
                            "version and the GPL3 notice.\n");
-                    printf(
-                        "  -V, --verbose                               Show debug information.\n");
+                    printf("  -V, --verbose                               Show debug information.\n");
                     return 0;
 
                 // -------- flags with arguments (MUST be last in group) --------
@@ -495,8 +474,7 @@ backup_config_end:
                 case 'v':
                 case 'c': {
 
-                    error(arg[j + 1] != '\0', "user", "-%c must not be combined with other flags",
-                          opt);
+                    error(arg[j + 1] != '\0', "user", "-%c must not be combined with other flags", opt);
 
                     error(i + 1 == argc, "user", "Missing argument for -%c", opt);
 
@@ -553,8 +531,7 @@ backup_config_end:
 
     if (doesBackup) {
         debug("Handling backup");
-        handleBackups(directoriesArray, numDirectories, backupDirectoriesArray, homedir, interval,
-                      (const char **)rsyncArgs, rsyncArgsNumber, shouldDebug);
+        handleBackups(directoriesArray, numDirectories, backupDirectoriesArray, homedir, interval, (const char **)rsyncArgs, rsyncArgsNumber, shouldDebug);
     }
 
     initscr(); // initialize ncurses
@@ -567,10 +544,9 @@ backup_config_end:
 
         int vaultsCount = 0;
         int *vaultsCountForEachDirectory = malloc(numDirectories * sizeof(int));
-        char **vaultsArray = getVaultsFromDirectories(
-            directoriesArray, numDirectories, vaultsCountForEachDirectory, &vaultsCount,
-            shouldDebug); // when selecting each vault won't show the directory from which they
-                          // come. We will find this later.
+        char **vaultsArray = getVaultsFromDirectories(directoriesArray, numDirectories, vaultsCountForEachDirectory, &vaultsCount,
+                                                      shouldDebug); // when selecting each vault won't show the directory from which they
+                                                                    // come. We will find this later.
 
         // bypass if -v or --vault is set
         if (bypassSelectionVault) {
@@ -578,10 +554,9 @@ backup_config_end:
             // create a new one
             vaultSelected = bypassSelectionVaultValue;
             debug("bypassing vault selection");
-            if (!isStringInArray(
-                    bypassSelectionVaultValue, (const char **)vaultsArray,
-                    vaultsCount)) { // we pass just vaultsCount and not vaultsCount + extraOptions
-                                    // to avoid matching with the extraOptions.
+            if (!isStringInArray(bypassSelectionVaultValue, (const char **)vaultsArray,
+                                 vaultsCount)) { // we pass just vaultsCount and not vaultsCount + extraOptions
+                                                 // to avoid matching with the extraOptions.
                 debug("[BYPASS] %s did not exist. Creating a new vault");
                 goto vault_creation;
             } else {
@@ -600,49 +575,39 @@ backup_config_end:
 
         // adds "create a new vault" into the vaultsArray
         const int extraOptions = 3;
-        vaultsArray =
-            realloc(vaultsArray, (vaultsCount + extraOptions) *
-                                     sizeof(char *)); // resize vaultsArray to fit the extra options
-        vaultsArray[vaultsCount] = "Create a new vault"; // some more options that are not vaults
+        vaultsArray = realloc(vaultsArray, (vaultsCount + extraOptions) * sizeof(char *)); // resize vaultsArray to fit the extra options
+        vaultsArray[vaultsCount] = "Create a new vault";                                   // some more options that are not vaults
         vaultsArray[vaultsCount + 1] = "Settings";
         vaultsArray[vaultsCount + 2] = "Quit (Ctrl+C)";
 
-        vaultSelected = ncursesSelect(
-            vaultsArray, "Select vault to open (Use arrows or WASD, Enter to select):", vaultsCount,
-            extraOptions, " ", "Or select an option below", "", shouldDebug);
+        vaultSelected = ncursesSelect(vaultsArray, "Select vault to open (Use arrows or WASD, Enter to select):", vaultsCount, extraOptions, " ", "Or select an option below", "", shouldDebug);
 
         // now that we won't use vaultsArray in this iteration of the loop, we should free it and
         // all its elements. (As this is memory in the heap and not the stack and thus is our
         // responsability to manage)
         for (int i = 0; i < vaultsCount; i++) {
-            if (vaultSelected !=
-                vaultsArray[i]) { // i forgot this condition before. and freed the pointer equal to
-                                  // vaultSelected... So don't remove this condition
-                free(vaultsArray[i]); // we must only free the vaults options and not the
-                                      // extraOptions to avoid segfault
+            if (vaultSelected != vaultsArray[i]) { // i forgot this condition before. and freed the pointer equal to
+                                                   // vaultSelected... So don't remove this condition
+                free(vaultsArray[i]);              // we must only free the vaults options and not the
+                                                   // extraOptions to avoid segfault
             }
         }
 
         debug("Selected vault: %s", vaultSelected);
-        if (strcmp(vaultSelected, "Create a new vault") != 0 &&
-            strcmp(vaultSelected, "Settings") != 0 && strcmp(vaultSelected, "Quit (Ctrl+C)") != 0) {
+        if (strcmp(vaultSelected, "Create a new vault") != 0 && strcmp(vaultSelected, "Settings") != 0 && strcmp(vaultSelected, "Quit (Ctrl+C)") != 0) {
         note_selection:
             bypassSelectionVault = 0; // we must reset bypassSelectionVault to not get stuck in a
                                       // infinite loop of bypassing
             int shouldChangeVault = 0;
             // we must find the directory from which the vault comes again.
-            char *notesDirectoryString = getDirectoryFromVault(
-                vaultSelected, vaultsArray, vaultsCount, vaultsCountForEachDirectory,
-                directoriesArray, numDirectories, shouldDebug);
+            char *notesDirectoryString = getDirectoryFromVault(vaultSelected, vaultsArray, vaultsCount, vaultsCountForEachDirectory, directoriesArray, numDirectories, shouldDebug);
             while (!shouldExit && !shouldChangeVault) {
                 // this loop is the note selector
                 int filesCount = 0;
-                char **filesArray = getNotesFromVault(notesDirectoryString, vaultSelected,
-                                                      journalRegex, &filesCount, shouldDebug);
+                char **filesArray = getNotesFromVault(notesDirectoryString, vaultSelected, journalRegex, &filesCount, shouldDebug);
 
                 int journalCount = 0;
-                char **journalArray = getJournalsFromVault(
-                    notesDirectoryString, vaultSelected, journalRegex, &journalCount, shouldDebug);
+                char **journalArray = getJournalsFromVault(notesDirectoryString, vaultSelected, journalRegex, &journalCount, shouldDebug);
 
                 // appends the journal at the end of filesArray
                 filesArray = realloc(filesArray, (filesCount + journalCount) * sizeof(char *));
@@ -661,9 +626,7 @@ backup_config_end:
                 }
                 // adds options
                 int extraNotesOptions = 4;
-                filesArray = realloc(
-                    filesArray, (filesCount + extraNotesOptions) *
-                                    sizeof(char *)); // resize filesArray to fit the extra options
+                filesArray = realloc(filesArray, (filesCount + extraNotesOptions) * sizeof(char *)); // resize filesArray to fit the extra options
                 filesArray[filesCount] = "Create new note";
                 filesArray[filesCount + 1] = "Back to vault selection";
                 filesArray[filesCount + 2] = "Delete vault";
@@ -673,10 +636,9 @@ backup_config_end:
                 if (bypassSelectionNote) {
                     debug("We are bypassing note selection.");
                     noteSelected = bypassSelectionNoteValue;
-                    if (isStringInArray(
-                            noteSelected, (const char **)filesArray,
-                            filesCount)) { // we just give filesCount and not filesCount +
-                                           // extraOptions to avoid matching with an extra options.
+                    if (isStringInArray(noteSelected, (const char **)filesArray,
+                                        filesCount)) { // we just give filesCount and not filesCount +
+                                                       // extraOptions to avoid matching with an extra options.
                         debug("The note specified with -n or --note does exist. Opening it.");
                         goto open_note;
                     } else { // if the specified note doesn't exist. We creat it
@@ -684,34 +646,27 @@ backup_config_end:
                         goto note_creation;
                     }
                 }
-                noteSelected = ncursesSelect(
-                    filesArray,
-                    "Select note or journal to open (Use arrows or WASD, Enter to select):",
-                    filesCount, extraNotesOptions, " ", "Or select an option below", "",
-                    shouldDebug);
+                noteSelected =
+                    ncursesSelect(filesArray, "Select note or journal to open (Use arrows or WASD, Enter to select):", filesCount, extraNotesOptions, " ", "Or select an option below", "", shouldDebug);
                 // now that we won't use filesArray in this iteration of the loop, we should free it
                 // and all its elements. (As this is memory in the heap and not the stack and thus
                 // is our responsability to manage)
                 for (int i = 0; i < filesCount; i++) {
                     if (noteSelected != filesArray[i]) { // we must prevent noteSelected to be
                                                          // freed. It will cause a lot of problems
-                        free(filesArray[i]); // we must only free the files options and not the
-                                             // extraOptions to avoid segfault
+                        free(filesArray[i]);             // we must only free the files options and not the
+                                                         // extraOptions to avoid segfault
                     }
                 }
                 free(filesArray);
                 debug("Selected note: %s", noteSelected);
-                if (strcmp(noteSelected, "Create new note") != 0 &&
-                    strcmp(noteSelected, "Back to vault selection") != 0 &&
-                    strcmp(noteSelected, "Delete vault") != 0 &&
+                if (strcmp(noteSelected, "Create new note") != 0 && strcmp(noteSelected, "Back to vault selection") != 0 && strcmp(noteSelected, "Delete vault") != 0 &&
                     strcmp(noteSelected, "Quit (Ctrl+C)") != 0) {
                 open_note:
-                    bypassSelectionNote =
-                        0; // we must reset bypassSelectionNote to avoid getting into an infinite
-                           // loop of bypassing the note selection
+                    bypassSelectionNote = 0; // we must reset bypassSelectionNote to avoid getting into an infinite
+                                             // loop of bypassing the note selection
                     char *fullPath = malloc(PATH_MAX);
-                    snprintf(fullPath, PATH_MAX, "%s/%s/%s", notesDirectoryString, vaultSelected,
-                             noteSelected);
+                    snprintf(fullPath, PATH_MAX, "%s/%s/%s", notesDirectoryString, vaultSelected, noteSelected);
                     // if it is a journal we must update it before
                     regex_t regex;
                     int regexReturn = regcomp(&regex, journalRegex, 0);
@@ -722,19 +677,17 @@ backup_config_end:
                     *journalWasUpdated = 0;
                     if (!regexReturn) { // if the regex matches -> it's a journal
                         debug("%s is a journal. Updating it...", noteSelected);
-                        fullPath = updateJournal(
-                            fullPath, noteSelected, timeFormat, journalWasUpdated,
-                            shouldDebug); // we return the path. As if it is a divided journal we
-                                          // must point to the correct entry
+                        fullPath = updateJournal(fullPath, noteSelected, timeFormat, journalWasUpdated,
+                                                 shouldDebug); // we return the path. As if it is a divided journal we
+                                                               // must point to the correct entry
                     }
                     if (newLineOnOpening) {
                         if (*journalWasUpdated) {
-                            appendToFile(
-                                fullPath, " \n",
-                                shouldDebug); // when updating the journal it adds a \n char at the
-                                              // end. So appendToFile(\n) does not work. We append a
-                                              // (special and rare) whitespace character + \n to
-                                              // bypass this issue.
+                            appendToFile(fullPath, " \n",
+                                         shouldDebug); // when updating the journal it adds a \n char at the
+                                                       // end. So appendToFile(\n) does not work. We append a
+                                                       // (special and rare) whitespace character + \n to
+                                                       // bypass this issue.
                         }
                         appendToFile(fullPath, "\n", shouldDebug);
                     }
@@ -742,30 +695,24 @@ backup_config_end:
                     free(fullPath);
                 } else if (strcmp(noteSelected, "Create new note") == 0) {
                 note_creation:
-                    noteSelected =
-                        createNewNote(notesDirectoryString, vaultSelected, bypassSelectionNote,
-                                      bypassSelectionNoteValue, journalRegex, shouldDebug);
+                    noteSelected = createNewNote(notesDirectoryString, vaultSelected, bypassSelectionNote, bypassSelectionNoteValue, journalRegex, shouldDebug);
                     // we can just go back to open_note
                     goto open_note;
                 } else if (strcmp(noteSelected, "Back to vault selection") == 0) {
                     shouldChangeVault = 1;
                 } else if (strcmp(noteSelected, "Delete vault") == 0) {
                     // we must find where does the vault comes from.
-                    char *notesDirectoryString = getDirectoryFromVault(
-                        vaultSelected, vaultsArray, vaultsCount, vaultsCountForEachDirectory,
-                        directoriesArray, numDirectories, shouldDebug);
+                    char *notesDirectoryString = getDirectoryFromVault(vaultSelected, vaultsArray, vaultsCount, vaultsCountForEachDirectory, directoriesArray, numDirectories, shouldDebug);
                     const char *yesNo[] = {"No, go back to note selection.", "Yes."};
-                    char *answer =
-                        ncursesSelect((char **)yesNo,
-                                      "Are you sure you want to delete the entire vault? This can "
-                                      "not be undone (Use arrows or WASD, Enter to select):",
-                                      1, 1, " ", "", "", shouldDebug);
+                    char *answer = ncursesSelect((char **)yesNo,
+                                                 "Are you sure you want to delete the entire vault? This can "
+                                                 "not be undone (Use arrows or WASD, Enter to select):",
+                                                 1, 1, " ", "", "", shouldDebug);
                     debug("You answered: %s for deleting the vault %s", answer, vaultSelected);
                     if (strcmp(answer, "Yes.") == 0) {
                         // delete the vault after confirmation by the user
                         char pathToRMRF[PATH_MAX];
-                        snprintf(pathToRMRF, PATH_MAX, "%s/%s", notesDirectoryString,
-                                 vaultSelected);
+                        snprintf(pathToRMRF, PATH_MAX, "%s/%s", notesDirectoryString, vaultSelected);
                         debug("Removed the directory: %s", pathToRMRF);
                         rmrf(pathToRMRF, shouldDebug);
                         shouldChangeVault = 1;
@@ -778,14 +725,12 @@ backup_config_end:
             free(vaultsArray);
         } else if (strcmp(vaultSelected, "Create a new vault") == 0) {
         vault_creation:
-            createNewVault(directoriesArray, numDirectories, vaultsArray, vaultsCount,
-                           bypassSelectionVault, bypassSelectionVaultValue, shouldDebug);
+            createNewVault(directoriesArray, numDirectories, vaultsArray, vaultsCount, bypassSelectionVault, bypassSelectionVaultValue, shouldDebug);
             bypassSelectionVault = 0; // we need to reset bypassSelectionVault to avoid getting into
                                       // an infinite loop of bypassing
         } else if (strcmp(vaultSelected, "Settings") == 0) {
-            openEditor(
-                configPath, editorToOpen, 0, 0,
-                shouldDebug); // as this is not a md file we set render and jumptoEnfOfFile to 0
+            openEditor(configPath, editorToOpen, 0, 0,
+                       shouldDebug); // as this is not a md file we set render and jumptoEnfOfFile to 0
         } else if (strcmp(vaultSelected, "Quit (Ctrl+C)") == 0) {
             debug("The program was exited");
             shouldExit = 1;
