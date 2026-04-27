@@ -1,7 +1,7 @@
 #include "utils.h"
 
-const char *supportedEditor[] = {"helix", "kakoune", "micro", "nano", "neovim", "vi", "vim"};
-const int numEditors = 7;
+const char *supportedEditor[] = {"helix", "jed", "kakoune", "micro", "nano", "neovim", "vi", "vim"};
+const int numEditors = 8;
 
 int compareString(const void *a, const void *b) {
     const char *str1 = *(const char **)a;
@@ -575,6 +575,45 @@ if (editor_pid == 0) {
     } else {
       debug("Running vi %s", path);
       execlp("vi", "vi", path, NULL);
+    }
+
+    error(1, "program", "execlp() failed.");
+    // ---- Jed ----
+  } else if (strcmp(editor, "jed") == 0) {
+
+    // If render enabled → spawn viv in parallel
+    if (render) {
+      debug("Running the editor...");
+      pid_t viv_pid = fork();
+      error(viv_pid < 0, "program", "fork() failed.");
+
+      if (viv_pid == 0) {
+        // GRANDCHILD → viv
+        
+
+        char viv_path[PATH_MAX];
+        strncpy(viv_path, path, PATH_MAX - 1);
+        viv_path[PATH_MAX - 1] = '\0';
+
+        if (shouldJumpToEndOfFile) {
+          strncat(viv_path, ":99999",
+                  PATH_MAX - strlen(viv_path) - 1);
+        }
+
+        debug("Running viv %s", viv_path);
+        execlp("viv", "viv", viv_path, NULL);
+        error(1, "program", "execlp() failed.");
+      }
+      // IMPORTANT: do NOT wait for viv
+    }
+
+    // Now run jed (this replaces the child process)
+    if (shouldJumpToEndOfFile) {
+      debug("Running jed %s -g 99999999", path);
+      execlp("jed", "jed", path, "-g", "99999999", NULL);
+    } else {
+      debug("Running jed %s", path);
+      execlp("jed", "jed", path, NULL);
     }
 
     error(1, "program", "execlp() failed.");
