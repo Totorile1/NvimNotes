@@ -145,7 +145,7 @@ void initAppFilesAndDirs(const char *home, const int shouldDebug) {
     error(!w, "program", "fopen failed opening %s");
     fprintf(w, //TODO CHANGE default json
 "{\n"
-"  \"directory\": [\"~/Documents/Notes/\"],\n"
+"  \"directory\": [\"~/Documents/\"],\n"// I personally use ~/Documents/Notes. But the dir doesn't exist most times. So for the default user it is better to put ~/Documents
 "  \"render\": true,\n"
 "  \"jumpToEndOfFileOnLaunch\": true,\n"
 "  \"editor\": \"neovim\",\n"
@@ -154,7 +154,9 @@ void initAppFilesAndDirs(const char *home, const int shouldDebug) {
 "  \"newLineOnOpening\": true,\n"
 "  \"backup\": {\n"
 "    \"enable\": false,\n"
-"    \"directory\": \"/path/to/backup\",\n"
+"    \"directory\": {\n"
+"       \"~/Documents/\": \"path/to/backup/\"\n"
+"      },\n"
 "    \"interval\": \"weekly\",\n"
 "    \"rsyncArgs\": [\"-Lqah\", \"--update\"]\n"
 "  }\n"

@@ -78,7 +78,7 @@ nix-build
 make
 ```
 
-5. Configure `./config.json` (it is automatically created on first launch if it does not already exist).
+5. [Configure](#configuration) `~/.config/notewrapper/config.json` (it is automatically created on first launch if it does not already exist).
 6. Run the program:
 
 ```shell
@@ -199,6 +199,7 @@ Edit `~/.config/notewrapper/config.json`. If it does not exist, it will be creat
 
 Note: 
 * Directories must end with `/`.
+* All directories used must exist.
 * Elements of `directory` and `backup.directory` must match exactly.  
 * Directories set in `directory` but not in `backup.directory` won't be backed up.
 * Directories set in `backup.directory` but not in `directory` will be ignored.
