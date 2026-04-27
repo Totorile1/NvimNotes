@@ -8,5 +8,6 @@ pkgs.mkShell {
     pkgs.gdb
     pkgs.valgrind
     pkgs.kdePackages.kcachegrind
+    pkgs.clang-tools
   ];
 }
