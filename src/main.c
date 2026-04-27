@@ -3,7 +3,14 @@
 #include "notes.h"
 
 int main(int argc, char *argv[]) {
-    int shouldDebug = 0;
+    char *test = malloc(2);
+    test = " ";
+    test++;
+    test++;
+    test++;
+    int shouldDebug = 1;
+    debug("%s", test);
+    shouldDebug = 0;
     int overwriteConfigPath = 0; 
     for (int i = 1; i < argc; i++) {
     char *arg = argv[i];
