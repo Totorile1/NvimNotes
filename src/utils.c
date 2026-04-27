@@ -425,7 +425,7 @@ if (editor_pid == 0) {
 
     // If render enabled → spawn viv in parallel
     if (render) {
-      debug("Running the editor...");
+      debug("Running Vivify...");
       pid_t viv_pid = fork();
       error(viv_pid < 0, "program", "fork() failed.");
 
@@ -464,7 +464,7 @@ if (editor_pid == 0) {
 
     // If render enabled → spawn viv in parallel
     if (render) {
-      debug("Running the editor...");
+      debug("Running Vivify...");
       pid_t viv_pid = fork();
       error(viv_pid < 0, "program", "fork() failed.");
 
@@ -505,7 +505,7 @@ if (editor_pid == 0) {
 
     // If render enabled → spawn viv in parallel
     if (render) {
-      debug("Running the editor...");
+      debug("Running Vivify...");
       pid_t viv_pid = fork();
       error(viv_pid < 0, "program", "fork() failed.");
 
@@ -544,7 +544,7 @@ if (editor_pid == 0) {
 
     // If render enabled → spawn viv in parallel
     if (render) {
-      debug("Running the editor...");
+      debug("Running Vivify...");
       pid_t viv_pid = fork();
       error(viv_pid < 0, "program", "fork() failed.");
 
@@ -583,7 +583,7 @@ if (editor_pid == 0) {
 
     // If render enabled → spawn viv in parallel
     if (render) {
-      debug("Running the editor...");
+      debug("Running Vivify...");
       pid_t viv_pid = fork();
       error(viv_pid < 0, "program", "fork() failed.");
 
