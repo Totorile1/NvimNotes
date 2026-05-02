@@ -202,9 +202,9 @@ void handleBackups(char **sourceDirectoryArray, const int sourceNumber, char **d
         if (endptr == line || (*endptr != '\n' && *endptr != '\0')) {
             error(1, "program", "Invalid timestamp in cache file: %s", line);
         }
-
-        if (difftime(now, lastBackupTime) > interval) {
-            debug("(difftime) %d is greater than (interval) %d -> backuping...", difftime(now, lastBackupTime), interval);
+        double deltaTime = difftime(now, lastBackupTime);
+        if (deltaTime > interval) {
+            debug("(difftime) %f is greater than (interval) %d -> backuping...", deltaTime, interval);
             shouldBackup = 1;
             cacheFile = fopen(cacheFilePATH, "w");
             if (!cacheFile) {
@@ -213,7 +213,7 @@ void handleBackups(char **sourceDirectoryArray, const int sourceNumber, char **d
             fprintf(cacheFile, "%ld\n", (long)now);
             fclose(cacheFile);
         } else {
-            debug("(difftime) %d is smaller than (interval) %d -> no need to backup.", difftime(now, lastBackupTime), interval);
+            debug("(difftime) %f is smaller than (interval) %d -> no need to backup.", deltaTime, interval);
         }
     }
 
