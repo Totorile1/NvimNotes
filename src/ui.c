@@ -130,16 +130,16 @@ char *createNewNote(char dirToVault[PATH_MAX], char *vaultFromDir, int bypass, c
             free(fileFullPath);
         } else { // if it is a unified journal
             char *fileFullPath = malloc(PATH_MAX);
-            snprintf(fileFullPath, PATH_MAX, "%s/%s/%s", dirToVault, vaultFromDir, fileName);
-            int len = strlen(fileFullPath);
-            if (fileFullPath[len - 3] != '.' || fileFullPath[len - 2] != 'm' || fileFullPath[len - 1] != 'd') { // there might be a cleaner way to do this
-                error(len > PATH_MAX - 3, "user", "%s is too big (greater than PATH_MAX-3) and we can't append .md", fileFullPath);
-                strncat(fileFullPath, ".md", PATH_MAX);
-                // we checked before if fileName didn't already exist.
-                // we must redo it as we add a .mode
-                struct stat st;
-                error(stat(fileFullPath, &st) == 0, "user", "%s already exists", fileFullPath);
+            // we append .md directly to fileName and not only to fileFullPath to avoid passing the wrong fileName later.
+            int lenName = strlen(fileName);
+            if (fileName[lenName - 3] != '.' && fileName[lenName - 2] != 'm' && fileName[lenName - 2] != '1') {
+                strcat(fileName, ".md");
+                debug("We just appended .md to %s", fileName);
             }
+            snprintf(fileFullPath, PATH_MAX, "%s/%s/%s", dirToVault, vaultFromDir, fileName);
+            // we verify if the file doesn't already exist as we might just have changed the fileName and (by extension) the file path.
+            struct stat metadata;
+            error(stat(fileFullPath, &metadata) == 0, "user", "%s already exists", fileFullPath);
             FILE *filePointer;
             filePointer = fopen(fileFullPath, "w"); // creates and opens the file
             error(filePointer == NULL, "program", "The %s couldn't be created.", fileFullPath);
