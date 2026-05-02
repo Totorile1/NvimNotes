@@ -58,7 +58,7 @@ To add support for a new editor, you must update both documentation and source c
   * Add the editor name to `supportedEditor[]`
   * Increment `numEditor`
 
-* If the editor executable name differs from its logical name (for example `neovim` → `nvim`), update `doesEditorExist()` in `src/utils.c`
+* If the editor executable name differs from its logical name (for example `neovim` → `nvim`), update `isEditorValid()` in `src/utils.c`
 
 * Modify `openEditor()` in `src/utils.c`:
 
